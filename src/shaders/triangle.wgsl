@@ -1,4 +1,3 @@
-const triangle_shader_code = `
 // Vertex Shader
 struct VertexOutput {
   @builtin(position) clip_position : vec4<f32>,
@@ -30,6 +29,3 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 fn fs_main(@location(0) color: vec4<f32>) -> @location(0) vec4<f32> {
   return color; // Return color already interpolated from vertex shader
 }
-`;
-
-export default triangle_shader_code;

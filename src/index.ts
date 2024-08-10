@@ -1,4 +1,4 @@
-import triangle_shader_code from "./shaders/triangle";
+import triangle_shader_code from "./shaders/triangle.wgsl";
 
 const check_webgpu_support = async () => {
   const adapter = await navigator.gpu?.requestAdapter();
