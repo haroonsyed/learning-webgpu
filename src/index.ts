@@ -3,6 +3,7 @@ import render_square from "./pipelines/square";
 import { globals } from "./globals";
 import { config } from "./config";
 import render_cube from "./pipelines/cube_hardcoded";
+import render_cube_loaded from "./pipelines/cube_loaded";
 
 const init_engine = async () => {
   // Init Canvas
@@ -21,10 +22,10 @@ const init_engine = async () => {
 
   // Get context
   const context = canvas?.getContext("webgpu") as unknown as GPUCanvasContext; // Weird type bug going on rn
-  const presentationFormat = navigator.gpu?.getPreferredCanvasFormat();
+  const presentation_format = navigator.gpu.getPreferredCanvasFormat();
   context?.configure({
     device,
-    format: presentationFormat,
+    format: presentation_format,
   });
 
   // Set globals
@@ -32,20 +33,9 @@ const init_engine = async () => {
   globals.device = device;
   globals.canvas = canvas;
   globals.context = context;
-  globals.presentation_format = presentationFormat;
+  globals.presentation_format = presentation_format;
   globals.command_encoder = device.createCommandEncoder();
-  globals.texture_view = context.getCurrentTexture().createView();
-  globals.depth_view = device
-    .createTexture({
-      size: {
-        width: canvas.width,
-        height: canvas.height,
-        depthOrArrayLayers: 1,
-      },
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    })
-    .createView();
+  globals.texture_view.label = "Canvas Texture";
 };
 
 const update = async () => {
@@ -53,35 +43,35 @@ const update = async () => {
     "Calculating Physics, Queuing rendering commands for this frame..."
   );
   // render_triangle();
-  await render_cube();
-};
-
-const wait_for_frame_end = async () => {
-  const target_frame_time = 1000 / config.target_fps;
-  const frame_time = performance.now() - globals.current_frame_start;
-  const sleep_time = target_frame_time - frame_time;
-  await new Promise((resolve) => setTimeout(resolve, sleep_time));
+  // await render_cube();
+  await render_cube_loaded();
 };
 
 const quit_pressed = () => {
   return globals.key_state.get("q");
 };
 
-const main = async () => {
-  await init_engine();
-  const {
-    device,
-    texture_view: textureView,
-    command_encoder: commandEncoder,
-  } = globals;
+const render_frame = async () => {
+  globals.texture_view = globals.context.getCurrentTexture().createView();
+  globals.depth_view = globals.device
+    .createTexture({
+      label: "Depth Texture",
+      size: {
+        width: globals.canvas.width,
+        height: globals.canvas.height,
+        depthOrArrayLayers: 1,
+      },
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+    .createView();
 
-  // while (!quit_pressed()) {
   globals.current_frame_start = performance.now();
-  globals.command_encoder = device.createCommandEncoder();
-  globals.render_pass = commandEncoder.beginRenderPass({
+  globals.command_encoder = globals.device.createCommandEncoder();
+  globals.render_pass = globals.command_encoder.beginRenderPass({
     colorAttachments: [
       {
-        view: textureView,
+        view: globals.texture_view,
         clearValue: [0.0, 0.0, 0.0, 1],
         loadOp: "clear",
         storeOp: "store",
@@ -97,13 +87,20 @@ const main = async () => {
   });
   await update();
   globals.render_pass.end();
-  const commandBuffer = commandEncoder.finish();
-  device.queue.submit([commandBuffer]);
-  await wait_for_frame_end();
+  globals.device.queue.submit([globals.command_encoder.finish()]);
   globals.current_frame++;
-  // }
 
-  console.log("Game loop ended");
+  if (quit_pressed()) {
+    console.log("Game loop ended");
+  } else {
+    requestAnimationFrame(render_frame);
+  }
+};
+
+const main = async () => {
+  await init_engine();
+
+  render_frame();
 };
 
 document.addEventListener("DOMContentLoaded", main);
