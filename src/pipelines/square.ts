@@ -1,11 +1,14 @@
 import { create_gpu_buffer } from "../gpu_util";
 import square_shader_code from "../shaders/square.wgsl";
+import { globals } from "../globals";
 
-const square_pipeline = (
-  renderPass: GPURenderPassEncoder,
-  device: GPUDevice,
-  presentationFormat: GPUTextureFormat
-) => {
+const square_pipeline = () => {
+  const {
+    device,
+    render_pass: renderPass,
+    presentation_format: presentationFormat,
+  } = globals;
+
   // Remember everything is in triangles
   const vertexData = new Float32Array([
     -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
@@ -15,8 +18,8 @@ const square_pipeline = (
     1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1,
   ]);
 
-  const vertexBuffer = create_gpu_buffer(device, vertexData);
-  const colorBuffer = create_gpu_buffer(device, colorData);
+  const vertexBuffer = create_gpu_buffer(vertexData);
+  const colorBuffer = create_gpu_buffer(colorData);
   const module = device.createShaderModule({ code: square_shader_code });
 
   renderPass.setPipeline(

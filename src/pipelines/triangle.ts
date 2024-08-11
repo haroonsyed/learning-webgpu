@@ -1,10 +1,13 @@
 import triangle_shader_code from "../shaders/triangle.wgsl";
+import { globals } from "../globals";
 
-const triangle_pipeline = (
-  renderPass: GPURenderPassEncoder,
-  device: GPUDevice,
-  presentationFormat: GPUTextureFormat
-) => {
+const triangle_pipeline = () => {
+  const {
+    device,
+    render_pass: renderPass,
+    presentation_format: presentationFormat,
+  } = globals;
+
   const module = device.createShaderModule({ code: triangle_shader_code });
   renderPass.setPipeline(
     device.createRenderPipeline({

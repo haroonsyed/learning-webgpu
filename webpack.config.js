@@ -13,7 +13,7 @@ module.exports = {
         use: "ts-loader",
       },
       {
-        test: /\.wgsl$/,
+        test: /\.(wgsl|obj)$/,
         exclude: /node_module/,
         use: "raw-loader",
       },
