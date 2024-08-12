@@ -15,7 +15,7 @@ const get_default_pipeline = async (uniform_buffer: GPUBuffer) => {
     entries: [
       {
         binding: 0,
-        visibility: GPUShaderStage.VERTEX,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
         buffer: {
           type: "uniform",
         },

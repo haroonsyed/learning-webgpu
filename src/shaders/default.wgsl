@@ -39,5 +39,9 @@ fn vs_main(@location(0) pos: vec4<f32>, @location(1) normal: vec4<f32>, @locatio
 
 @fragment
 fn fs_main(@location(0) tex_coord: vec4<f32>) -> @location(0) vec4<f32> {
+  if (uniforms.diffuse_present == 0.0) {
+    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  }
+
   return textureSample(diffuse_texture, my_sampler, tex_coord.xy);
 }
