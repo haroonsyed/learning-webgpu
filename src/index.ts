@@ -1,9 +1,8 @@
-import render_triangle from "./pipelines/triangle";
-import render_square from "./pipelines/square";
 import { globals } from "./globals";
-import { config } from "./config";
-import render_cube from "./pipelines/cube_hardcoded";
-import render_cube_loaded from "./pipelines/cube_loaded";
+import { SceneObject } from "./scene_object/scene_object";
+import { Light } from "./lights/light";
+import { vec3 } from "gl-matrix";
+import { Scene } from "./scene/scene";
 
 const init_engine = async () => {
   // Init Canvas
@@ -84,15 +83,18 @@ const init_engine = async () => {
   globals.presentation_format = presentation_format;
   globals.command_encoder = device.createCommandEncoder();
   globals.texture_view.label = "Canvas Texture";
+
+  // Setup scene
+  globals.scene = new Scene();
+  globals.scene.add_object(new SceneObject("0", "cube", "models/cube.obj"));
+  globals.scene.add_light(
+    new Light("1", "light", vec3.fromValues(1.0, 1.0, 0))
+  );
 };
 
 const update = async () => {
-  console.log(
-    "Calculating Physics, Queuing rendering commands for this frame..."
-  );
-  // render_triangle();
-  // await render_cube();
-  globals.camera.update_camera();
+  await globals.scene.update();
+
   globals.key_press.clear();
   globals.mouse_state.dx = 0;
   globals.mouse_state.dy = 0;
@@ -102,10 +104,11 @@ const update = async () => {
 };
 
 const render = async () => {
-  await render_cube_loaded();
+  await globals.scene.render();
 };
 
 const render_frame = async () => {
+  // Initialize Textures for this frame
   globals.texture_view = globals.context.getCurrentTexture().createView();
   globals.depth_view = globals.device
     .createTexture({
@@ -120,6 +123,7 @@ const render_frame = async () => {
     })
     .createView();
 
+  // Create command pipeline
   globals.current_frame_start = performance.now();
   globals.command_encoder = globals.device.createCommandEncoder();
   globals.render_pass = globals.command_encoder.beginRenderPass({
@@ -139,7 +143,11 @@ const render_frame = async () => {
       depthStoreOp: "store",
     },
   });
+
+  // Enqueue rendering commands
   await render();
+
+  // Execute rendering commands
   globals.render_pass.end();
   globals.device.queue.submit([globals.command_encoder.finish()]);
   globals.current_frame++;
@@ -162,7 +170,6 @@ const game_loop = async () => {
 
 const main = async () => {
   await init_engine();
-
   game_loop();
 };
 

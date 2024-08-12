@@ -1,6 +1,5 @@
 import { mat4, vec3 } from "gl-matrix";
-import { SceneObject } from "../types/SceneObject";
-import { config } from "../config";
+import { SceneObject } from "../scene_object/scene_object";
 import { globals } from "../globals";
 
 enum CameraMovementMode {
@@ -63,7 +62,7 @@ class Camera extends SceneObject {
     return projection;
   };
 
-  update_camera = () => {
+  update = () => {
     if (globals.key_press.get("`")) {
       console.log("toggling camera mode");
       if (this.movement_mode === CameraMovementMode.ROTATE_ORIGIN) {

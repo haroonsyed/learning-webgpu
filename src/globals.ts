@@ -1,4 +1,4 @@
-import { Camera } from "./camera/camera";
+import { Scene } from "./scene/scene";
 
 type MouseState = {
   x: number;
@@ -13,7 +13,7 @@ type MouseState = {
   middle_click: boolean;
 };
 
-type SceneGlobals = {
+type EngineGlobals = {
   texture_view: GPUTextureView;
   depth_view: GPUTextureView;
   command_encoder: GPUCommandEncoder;
@@ -28,10 +28,10 @@ type SceneGlobals = {
   mouse_state: MouseState;
   current_frame: number;
   current_frame_start: number;
-  camera: Camera;
+  scene: Scene;
 };
 
-let globals: SceneGlobals = {
+let globals: EngineGlobals = {
   texture_view: {} as GPUTextureView,
   depth_view: {} as GPUTextureView,
   command_encoder: {} as GPUCommandEncoder,
@@ -57,6 +57,6 @@ let globals: SceneGlobals = {
   },
   current_frame: 0,
   current_frame_start: 0,
-  camera: new Camera("-1", "camera"),
+  scene: {} as Scene,
 };
 export { globals };

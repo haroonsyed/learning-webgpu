@@ -61,6 +61,11 @@ const square_pipeline = () => {
       primitive: {
         topology: "triangle-list",
       },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: true,
+        depthCompare: "less",
+      },
     })
   );
   renderPass.setVertexBuffer(0, vertexBuffer);

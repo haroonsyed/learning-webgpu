@@ -19,6 +19,11 @@ const triangle_pipeline = () => {
         module,
         targets: [{ format: presentationFormat }],
       },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: true,
+        depthCompare: "less",
+      },
     })
   );
   renderPass.draw(3, 1, 0, 0);
