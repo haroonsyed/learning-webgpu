@@ -19,39 +19,25 @@ struct Uniforms {
 // Vertex Shader
 struct VertexOutput {
   @builtin(position) clip_position : vec4<f32>,
-  @location(0) vertex_color : vec4<f32>
+  @location(0) tex_coord : vec4<f32>
 };
 
 @vertex
 fn vs_main(@location(0) pos: vec4<f32>, @location(1) normal: vec4<f32>, @location(2) uv_coord: vec4<f32>, @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
   var output: VertexOutput;
   output.clip_position = uniforms.projection * uniforms.view * uniforms.model * pos;
-
-  const colors = array(
-    vec4<f32>(0.0, 0.0, 1.0, 1.0), // front - blue
-    vec4<f32>(1.0, 0.0, 0.0, 1.0), // right - red
-    vec4<f32>(1.0, 1.0, 0.0, 1.0), // back - yellow
-    vec4<f32>(0.0, 1.0, 1.0, 1.0), // left - aqua
-    vec4<f32>(0.0, 1.0, 0.0, 1.0), // top - green
-    vec4<f32>(1.0, 0.0, 1.0, 1.0),  // bottom - fuchsia
-    vec4<f32>(0.0, 1.0, 0.0, 1.0), // top - green
-    vec4<f32>(1.0, 0.0, 1.0, 1.0),  // bottom - fuchsia
-    vec4<f32>(0.0, 0.0, 1.0, 1.0), // front - blue
-    vec4<f32>(1.0, 0.0, 0.0, 1.0), // right - red
-    vec4<f32>(1.0, 1.0, 0.0, 1.0), // back - yellow
-    vec4<f32>(0.0, 1.0, 1.0, 1.0), // left - aqua
-    vec4<f32>(0.0, 1.0, 0.0, 1.0), // top - green
-    vec4<f32>(1.0, 0.0, 1.0, 1.0),  // bottom - fuchsia
-    vec4<f32>(0.0, 1.0, 0.0, 1.0), // top - green
-    vec4<f32>(1.0, 0.0, 1.0, 1.0),  // bottom - fuchsia
-  );
   
-  output.vertex_color = colors[vertexIndex % 8];
+  output.tex_coord = uv_coord;
   return output;
 }
 
 // Fragment Shader
+@group(0) @binding(1) var my_sampler: sampler;
+@group(0) @binding(2) var diffuse_texture: texture_2d<f32>;
+@group(0) @binding(3) var specular_texture: texture_2d<f32>;
+@group(0) @binding(4) var normal_texture: texture_2d<f32>;
+
 @fragment
-fn fs_main(@location(0) vertex_color: vec4<f32>) -> @location(0) vec4<f32> {
-  return vertex_color; // Return color already interpolated from vertex shader
+fn fs_main(@location(0) tex_coord: vec4<f32>) -> @location(0) vec4<f32> {
+  return textureSample(diffuse_texture, my_sampler, tex_coord.xy);
 }

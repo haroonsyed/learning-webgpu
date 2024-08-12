@@ -1,7 +1,7 @@
 import default_shader_code from "../shaders/default.wgsl";
 import { globals } from "../globals";
 
-const set_default_pipeline = async (uniform_buffer: GPUBuffer) => {
+const get_default_pipeline = async (uniform_buffer: GPUBuffer) => {
   // Get globals
   const { device, render_pass, presentation_format } = globals;
 
@@ -107,27 +107,7 @@ const set_default_pipeline = async (uniform_buffer: GPUBuffer) => {
     },
   });
 
-  // Create the actual bindgroup attached to the pipeline
-  // Move this to scene object
-  const bind_group = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: uniform_buffer,
-          offset: 0,
-          size: uniform_buffer.size,
-        },
-      },
-      {
-        binding: 1,
-        resource: device.createSampler({}),
-      },
-    ],
-  });
-
-  return { pipeline, bind_group };
+  return pipeline;
 };
 
-export default set_default_pipeline;
+export default get_default_pipeline;

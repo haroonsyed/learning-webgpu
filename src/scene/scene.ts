@@ -3,7 +3,7 @@ import { Camera } from "../camera/camera";
 import { globals } from "../globals";
 import { create_gpu_buffer } from "../gpu_util";
 import { Light } from "../lights/light";
-import set_default_pipeline from "../pipelines/default_pipeline";
+import get_default_pipeline from "../pipelines/default_pipeline";
 import { SceneObject } from "../scene_object/scene_object";
 import { UNIFORM_DATA_SIZE } from "./uniform_data";
 import { get_default_texture, load_texture } from "../texture/texture_loader";
@@ -27,11 +27,11 @@ class Scene {
       GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     );
 
-    set_default_pipeline(this.uniform_buffer).then((result) => {
-      this.default_pipeline = result.pipeline;
+    get_default_pipeline(this.uniform_buffer).then((pipeline) => {
+      this.default_pipeline = pipeline;
 
       this.default_bindgroup_descriptor = {
-        layout: this.default_pipeline.getBindGroupLayout(0),
+        layout: pipeline.getBindGroupLayout(0),
         entries: [
           {
             binding: 0,

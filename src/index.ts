@@ -86,7 +86,12 @@ const init_engine = async () => {
 
   // Setup scene
   globals.scene = new Scene();
-  globals.scene.add_object(new SceneObject("0", "cube", "models/cube.obj"));
+
+  const sceneObj = new SceneObject("0", "cube", "models/cube.obj");
+  sceneObj.texture_diffuse = "textures/wall/brickwall.jpg";
+  sceneObj.texture_normal = "textures/wall/brickwall_normal.jpg";
+
+  globals.scene.add_object(sceneObj);
   globals.scene.add_light(
     new Light("1", "light", vec3.fromValues(1.0, 1.0, 0))
   );
