@@ -6,6 +6,7 @@ import { Light } from "../lights/light";
 import set_default_pipeline from "../pipelines/default_pipeline";
 import { SceneObject } from "../scene_object/scene_object";
 import { UNIFORM_DATA_SIZE } from "./uniform_data";
+import { get_default_texture, load_texture } from "../texture/texture_loader";
 
 class Scene {
   lights: Light[];
@@ -13,7 +14,7 @@ class Scene {
   objects: SceneObject[];
   uniform_buffer: GPUBuffer;
   default_pipeline: GPURenderPipeline | undefined = undefined;
-  default_bind_group: GPUBindGroup | undefined = undefined;
+  default_bindgroup_descriptor: GPUBindGroupDescriptor | undefined = undefined;
 
   constructor() {
     this.lights = [];
@@ -28,7 +29,39 @@ class Scene {
 
     set_default_pipeline(this.uniform_buffer).then((result) => {
       this.default_pipeline = result.pipeline;
-      this.default_bind_group = result.bind_group;
+
+      this.default_bindgroup_descriptor = {
+        layout: this.default_pipeline.getBindGroupLayout(0),
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: this.uniform_buffer,
+              offset: 0,
+              size: this.uniform_buffer.size,
+            },
+          },
+          {
+            binding: 1,
+            resource: globals.device.createSampler({}),
+          },
+          {
+            // Diffuse texture
+            binding: 2,
+            resource: get_default_texture().createView(),
+          },
+          {
+            // Specular texture
+            binding: 3,
+            resource: get_default_texture().createView(),
+          },
+          {
+            // Normal texture
+            binding: 4,
+            resource: get_default_texture().createView(),
+          },
+        ],
+      };
     });
   }
 
@@ -48,9 +81,12 @@ class Scene {
     // Create a Float32Array to hold the uniform data
     const uniform_data = new Float32Array(UNIFORM_DATA_SIZE);
 
+    // Copy light count into the uniform data array
+    uniform_data[19] = light_count;
+
     // Copy matrices into the uniform data array
-    uniform_data.set(view_matrix, 16);
-    uniform_data.set(projection_matrix, 32);
+    uniform_data.set(view_matrix, 20);
+    uniform_data.set(projection_matrix, 36);
 
     if (globals.current_frame == 2) {
       console.log(uniform_data);
@@ -58,13 +94,10 @@ class Scene {
 
     // Copy light data into the uniform data array
     for (let i = 0; i < light_count; i++) {
-      const light_offset = 48 + i * 8;
+      const light_offset = 52 + i * 8;
       uniform_data.set(this.lights[i].position, light_offset);
       uniform_data.set(this.lights[i].color, light_offset + 4);
     }
-
-    // Copy light count into the uniform data array
-    uniform_data[48 + light_count * 8] = light_count;
 
     // Copy to gpu buffer
     globals.device.queue.writeBuffer(
@@ -88,17 +121,16 @@ class Scene {
 
   render = async () => {
     const { render_pass } = globals;
-    if (!this.default_pipeline || !this.default_bind_group) {
+    if (!this.default_pipeline || !this.default_bindgroup_descriptor) {
       console.log("Scene still initializing...");
       return;
     }
 
     this.update_uniform_data();
     render_pass.setPipeline(this.default_pipeline);
-    render_pass.setBindGroup(0, this.default_bind_group);
 
     const render_promises = this.objects.map((object) =>
-      object.render(this.uniform_buffer)
+      object.render(this.default_bindgroup_descriptor!)
     );
     await Promise.all(render_promises);
   };

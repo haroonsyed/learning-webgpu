@@ -20,6 +20,29 @@ const set_default_pipeline = async (uniform_buffer: GPUBuffer) => {
           type: "uniform",
         },
       },
+      {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {},
+      },
+      {
+        // Diffuse texture
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {},
+      },
+      {
+        // Specular texture
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {},
+      },
+      {
+        // Normal texture
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {},
+      },
     ],
   });
 
@@ -85,6 +108,7 @@ const set_default_pipeline = async (uniform_buffer: GPUBuffer) => {
   });
 
   // Create the actual bindgroup attached to the pipeline
+  // Move this to scene object
   const bind_group = device.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
     entries: [
@@ -95,6 +119,10 @@ const set_default_pipeline = async (uniform_buffer: GPUBuffer) => {
           offset: 0,
           size: uniform_buffer.size,
         },
+      },
+      {
+        binding: 1,
+        resource: device.createSampler({}),
       },
     ],
   });

@@ -7,6 +7,10 @@ type LightUniformData = {
 
 type UniformData = {
   model_matrix: mat4;
+  diffuse_present: GLfloat;
+  specular_present: GLfloat;
+  normal_present: GLfloat;
+  light_count: GLfloat;
   view_matrix: mat4;
   projection_matrix: mat4;
   lights: [
@@ -21,12 +25,8 @@ type UniformData = {
     LightUniformData,
     LightUniformData
   ];
-  light_count: GLfloat;
-  unused_0: GLfloat; // Padding for alignment
-  unused_1: GLfloat; // Padding for alignment
-  unused_2: GLfloat; // Padding for alignment
 };
 
-const UNIFORM_DATA_SIZE = 4 * 4 + 4 * 4 + 4 * 4 + 10 * 4 * 2 + 1 + 3;
+const UNIFORM_DATA_SIZE = 4 * 4 + 4 + 4 * 4 + 4 * 4 + 10 * 4 * 2;
 
 export { UniformData, LightUniformData, UNIFORM_DATA_SIZE };

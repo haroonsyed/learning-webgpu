@@ -1,6 +1,7 @@
 import { globals } from "../globals";
 import { load_model, models } from "../model/model_loader";
 import { mat4, vec3 } from "gl-matrix";
+import { load_texture } from "../texture/texture_loader";
 
 class SceneObject {
   id: string;
@@ -14,6 +15,7 @@ class SceneObject {
   texture_specular: string | undefined;
   texture_normal: string | undefined;
   texture_emissive: string | undefined;
+  bind_group: GPUBindGroup | undefined;
 
   constructor(
     id: string,
@@ -56,20 +58,86 @@ class SceneObject {
     return models[this.model];
   };
 
+  has_texture_diffuse = () => {
+    return this.texture_diffuse !== undefined && this.texture_diffuse !== "";
+  };
+
+  has_texture_specular = () => {
+    return this.texture_specular !== undefined && this.texture_specular !== "";
+  };
+
+  has_texture_normal = () => {
+    return this.texture_normal !== undefined && this.texture_normal !== "";
+  };
+
+  has_texture_emissive = () => {
+    return this.texture_emissive !== undefined && this.texture_emissive !== "";
+  };
+
+  set_bind_group = async (default_descriptor: GPUBindGroupDescriptor) => {
+    if (this.bind_group === undefined) {
+      // For each texture, create a bind group entry
+      const desciptor_entries =
+        default_descriptor.entries as Array<GPUBindGroupEntry>;
+      const uniform_buffer_descriptor = desciptor_entries[0];
+      const sampler_descriptor = desciptor_entries[1];
+      const diffuse_texture = await load_texture(this.texture_diffuse);
+      const specular_texture = await load_texture(this.texture_specular);
+      const normal_texture = await load_texture(this.texture_normal);
+
+      this.bind_group = globals.device.createBindGroup({
+        ...default_descriptor,
+        entries: [
+          uniform_buffer_descriptor,
+          sampler_descriptor,
+          {
+            binding: 2,
+            resource: diffuse_texture.createView(),
+          },
+          {
+            binding: 3,
+            resource: specular_texture.createView(),
+          },
+          {
+            binding: 4,
+            resource: normal_texture.createView(),
+          },
+        ],
+      });
+    }
+
+    globals.render_pass.setBindGroup(0, this.bind_group!);
+  };
+
   update = () => {};
-  render = async (uniform_buffer: GPUBuffer) => {
+  render = async (descriptor: GPUBindGroupDescriptor) => {
     if (this.model === undefined || this.model === "") {
       return;
     }
 
+    // Grab relevant data from the descriptor
+    const desciptor_entries = descriptor.entries as Array<GPUBindGroupEntry>;
+    const uniform_buffer_resource = desciptor_entries[0]
+      .resource as GPUBufferBinding;
+    const uniform_buffer = uniform_buffer_resource.buffer;
+
+    // Set the bind group
+    await this.set_bind_group(descriptor);
+
+    // Update uniform data
     const model_matrix = this.get_model_matrix();
     globals.device.queue.writeBuffer(
       uniform_buffer,
       0,
-      Float32Array.from(model_matrix)
+      Float32Array.from([
+        ...model_matrix,
+        this.has_texture_diffuse() ? 1.0 : 0.0,
+        this.has_texture_specular() ? 1.0 : 0.0,
+        this.has_texture_normal() ? 1.0 : 0.0,
+      ])
     );
 
-    // assumes default pipeline is bound
+    // Render the object
     const { render_pass } = globals;
     const {
       vertex_data_gpu,

@@ -5,13 +5,13 @@ struct LightUniformData{
 }
 struct Uniforms {
   model: mat4x4<f32>,
+  diffuse_present: f32,
+  specular_present: f32,
+  normal_present: f32,
+  light_count: u32,
   view: mat4x4<f32>,
   projection: mat4x4<f32>,
   lights: array<LightUniformData, 10>,
-  light_count: u32,
-  unused_0: u32,
-  unused_1: u32,
-  unused_2: u32,
 }
 
 @binding(0) @group(0) var<uniform> uniforms: Uniforms;
