@@ -9,7 +9,6 @@ const render_cube = async () => {
   const { device, render_pass, presentation_format, camera } = globals;
 
   const cube = new SceneObject("0", "cube", "models/cube.obj");
-  cube.rotation = [0, (globals.current_frame * 0.1) / config.target_fps, 0.0];
   const {
     vertex_data_gpu,
     normal_data_gpu,

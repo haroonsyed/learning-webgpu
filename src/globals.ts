@@ -1,5 +1,18 @@
 import { Camera } from "./camera/camera";
 
+type MouseState = {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  left: boolean;
+  right: boolean;
+  middle: boolean;
+  left_click: boolean;
+  right_click: boolean;
+  middle_click: boolean;
+};
+
 type SceneGlobals = {
   texture_view: GPUTextureView;
   depth_view: GPUTextureView;
@@ -11,6 +24,8 @@ type SceneGlobals = {
   presentation_format: GPUTextureFormat;
   render_pass: GPURenderPassEncoder;
   key_state: Map<string, boolean>;
+  key_press: Map<string, boolean>;
+  mouse_state: MouseState;
   current_frame: number;
   current_frame_start: number;
   camera: Camera;
@@ -27,6 +42,19 @@ let globals: SceneGlobals = {
   presentation_format: "bgra8unorm" as GPUTextureFormat,
   render_pass: {} as GPURenderPassEncoder,
   key_state: new Map<string, boolean>(),
+  key_press: new Map<string, boolean>(),
+  mouse_state: {
+    x: 0,
+    y: 0,
+    dx: 0,
+    dy: 0,
+    left: false,
+    right: false,
+    middle: false,
+    left_click: false,
+    right_click: false,
+    middle_click: false,
+  },
   current_frame: 0,
   current_frame_start: 0,
   camera: new Camera("-1", "camera"),
