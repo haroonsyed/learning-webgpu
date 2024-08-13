@@ -55,35 +55,22 @@ const get_default_pipeline = async (uniform_buffer: GPUBuffer) => {
       module: module,
       buffers: [
         {
-          // Vertex buffer
-          arrayStride: 3 * 4,
+          arrayStride: 16 * 3,
           attributes: [
             {
               shaderLocation: 0,
               offset: 0,
-              format: "float32x3",
+              format: "float32x4",
             },
-          ],
-        },
-        {
-          // Normal buffer
-          arrayStride: 3 * 4,
-          attributes: [
             {
               shaderLocation: 1,
-              offset: 0,
-              format: "float32x3",
+              offset: 16,
+              format: "float32x4",
             },
-          ],
-        },
-        {
-          // UV buffer
-          arrayStride: 3 * 4,
-          attributes: [
             {
               shaderLocation: 2,
-              offset: 0,
-              format: "float32x3",
+              offset: 32,
+              format: "float32x4",
             },
           ],
         },

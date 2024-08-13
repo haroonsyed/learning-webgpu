@@ -88,10 +88,6 @@ class Scene {
     uniform_data.set(view_matrix, 20);
     uniform_data.set(projection_matrix, 36);
 
-    if (globals.current_frame == 2) {
-      console.log(uniform_data);
-    }
-
     // Copy light data into the uniform data array
     for (let i = 0; i < light_count; i++) {
       const light_offset = 52 + i * 8;
@@ -100,12 +96,13 @@ class Scene {
     }
 
     // Copy to gpu buffer
+    const non_object_specific_size_floats = 16 + 3;
     globals.device.queue.writeBuffer(
       this.uniform_buffer,
-      16 * 4,
+      non_object_specific_size_floats * 4,
       uniform_data,
-      16,
-      UNIFORM_DATA_SIZE - 16
+      non_object_specific_size_floats,
+      UNIFORM_DATA_SIZE - non_object_specific_size_floats
     );
   };
 

@@ -109,7 +109,10 @@ class SceneObject {
     globals.render_pass.setBindGroup(0, this.bind_group!);
   };
 
-  update = () => {};
+  update = () => {
+    // Rotate the object relative to current rotation
+    this.rotation[1] += 0.001;
+  };
   render = async (descriptor: GPUBindGroupDescriptor) => {
     if (this.model === undefined || this.model === "") {
       return;
@@ -139,19 +142,10 @@ class SceneObject {
 
     // Render the object
     const { render_pass } = globals;
-    const {
-      vertex_data_gpu,
-      normal_data_gpu,
-      uv_data_gpu,
-      vertex_indices_gpu,
-      normal_indices_gpu,
-      uv_indices_gpu,
-      index_count,
-    } = await this.get_model_data();
+    const { vertex_data_gpu, indices_gpu, index_count } =
+      await this.get_model_data();
     render_pass.setVertexBuffer(0, vertex_data_gpu);
-    render_pass.setVertexBuffer(1, normal_data_gpu);
-    render_pass.setVertexBuffer(2, uv_data_gpu);
-    render_pass.setIndexBuffer(vertex_indices_gpu, "uint32");
+    render_pass.setIndexBuffer(indices_gpu, "uint32");
     render_pass.drawIndexed(index_count, 1, 0, 0, 0);
   };
 }

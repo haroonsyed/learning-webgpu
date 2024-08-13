@@ -1,14 +1,11 @@
+import { vec4 } from "gl-matrix";
 import { create_gpu_buffer } from "../gpu_util";
 
 const models: { [key: string]: ModelData } = {};
 
 type ModelData = {
   vertex_data_gpu: GPUBuffer;
-  normal_data_gpu: GPUBuffer;
-  uv_data_gpu: GPUBuffer;
-  vertex_indices_gpu: GPUBuffer;
-  normal_indices_gpu: GPUBuffer;
-  uv_indices_gpu: GPUBuffer;
+  indices_gpu: GPUBuffer;
   index_count: number;
 };
 
@@ -20,85 +17,102 @@ const load_model = async (model_path: string | undefined) => {
   if (models[model_path]) {
     return;
   }
+  console.log("Loading model", model_path);
 
+  // Fetch model
   const response = await fetch(model_path);
   const model = await response.text();
 
-  const delimited_model = model.split("\n");
+  // Track the attributes of the model
+  const positions: vec4[] = [];
+  const normals: vec4[] = [];
+  const uvs: vec4[] = [];
 
-  const vertices: GLfloat[] = [];
-  const normals: GLfloat[] = [];
-  const uvs: GLfloat[] = [];
-  const vertices_indices: number[] = [];
-  const normals_indices: number[] = [];
-  const uvs_indices: number[] = [];
+  // These are the final vertices making up the faces in obj file
+  const vertices_before_indexed: string[] = [];
 
-  delimited_model.forEach((line) => {
+  // Parse data from obj file
+  let max_position = vec4.create();
+  model.split("\n").forEach((line) => {
     const split_line = line.split(" ");
     const type = split_line[0];
 
     if (type === "v") {
-      vertices.push(parseFloat(split_line[1]));
-      vertices.push(parseFloat(split_line[2]));
-      vertices.push(parseFloat(split_line[3]));
+      const position = vec4.fromValues(
+        parseFloat(split_line[1]),
+        parseFloat(split_line[2]),
+        parseFloat(split_line[3]),
+        1.0
+      );
+
+      max_position =
+        vec4.length(position) > vec4.length(max_position)
+          ? position
+          : max_position;
+      positions.push(position);
     } else if (type === "vn") {
-      normals.push(parseFloat(split_line[1]));
-      normals.push(parseFloat(split_line[2]));
-      normals.push(parseFloat(split_line[3]));
+      const normal = vec4.fromValues(
+        parseFloat(split_line[1]),
+        parseFloat(split_line[2]),
+        parseFloat(split_line[3]),
+        0.0
+      );
+
+      normals.push(normal);
     } else if (type === "vt") {
-      uvs.push(parseFloat(split_line[1]));
-      uvs.push(parseFloat(split_line[2]));
+      const uv = vec4.fromValues(
+        parseFloat(split_line[1]),
+        parseFloat(split_line[2]),
+        0.0,
+        0.0
+      );
+
+      uvs.push(uv);
     } else if (type === "f") {
-      const vertex1 = split_line[1].split("/");
-      const vertex2 = split_line[2].split("/");
-      const vertex3 = split_line[3].split("/");
-
-      vertices_indices.push(parseInt(vertex1[0]) - 1);
-      vertices_indices.push(parseInt(vertex2[0]) - 1);
-      vertices_indices.push(parseInt(vertex3[0]) - 1);
-
-      uvs_indices.push(parseInt(vertex1[1]) - 1);
-      uvs_indices.push(parseInt(vertex2[1]) - 1);
-      uvs_indices.push(parseInt(vertex3[1]) - 1);
-
-      normals_indices.push(parseInt(vertex1[2]) - 1);
-      normals_indices.push(parseInt(vertex2[2]) - 1);
-      normals_indices.push(parseInt(vertex3[2]) - 1);
+      vertices_before_indexed.push(split_line[1]);
+      vertices_before_indexed.push(split_line[2]);
+      vertices_before_indexed.push(split_line[3]);
     }
   });
 
-  const vertexData = new Float32Array(vertices);
-  const normalData = new Float32Array(normals);
-  const uvData = new Float32Array(uvs);
-  const vertex_indices = new Uint32Array(vertices_indices);
-  const normal_indices = new Uint32Array(normals_indices);
-  const uv_indices = new Uint32Array(uvs_indices);
+  // Build up the indexed vertices
+  const indices: GLint[] = [];
+  const vertex_map = new Map<string, GLint>(); // number is the size at time of insertion
+  let vertex_data: vec4[] = [];
 
-  const vertex_data_gpu = create_gpu_buffer(vertexData);
-  const normal_data_gpu = create_gpu_buffer(normalData);
-  const uv_data_gpu = create_gpu_buffer(uvData);
-  const vertex_indices_gpu = create_gpu_buffer(
-    vertex_indices,
+  vertices_before_indexed.forEach((vertex) => {
+    if (!vertex_map.has(vertex)) {
+      const attributes = vertex.split("/").filter((v) => v !== ""); // Handle when double slashes are used
+      const position_index = parseInt(attributes[0]) - 1;
+      const uv_index = parseInt(attributes[1]) - 1;
+      const normal_index = parseInt(attributes[2]) - 1;
+
+      vertex_data.push(positions[position_index]);
+      vertex_data.push(uvs[uv_index] || vec4.create());
+      vertex_data.push(normals[normal_index] || vec4.create());
+
+      const index: GLint = vertex_map.size;
+      vertex_map.set(vertex, index);
+    }
+
+    indices.push(vertex_map.get(vertex)!);
+  });
+
+  // Potentially slow
+  const vertex_data_array = vertex_data.flatMap((v) => [...v]);
+
+  const vertex_data_gpu = create_gpu_buffer(
+    new Float32Array(vertex_data_array)
+  );
+  const indices_gpu = create_gpu_buffer(
+    new Int32Array(indices),
     GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
   );
-  const normal_indices_gpu = create_gpu_buffer(
-    normal_indices,
-    GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-  );
-  const uv_indices_gpu = create_gpu_buffer(
-    uv_indices,
-    GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-  );
 
-  const index_count = vertex_indices.length;
-
+  const index_count = indices.length;
   const result = {
     vertex_data_gpu,
-    normal_data_gpu,
-    uv_data_gpu,
-    vertex_indices_gpu,
-    normal_indices_gpu,
-    uv_indices_gpu,
+    indices_gpu,
     index_count,
   };
 

@@ -93,7 +93,7 @@ const init_engine = async () => {
 
   globals.scene.add_object(sceneObj);
   globals.scene.add_light(
-    new Light("1", "light", vec3.fromValues(1.0, 1.0, 0))
+    new Light("1", "light", vec3.fromValues(2.0, 2.0, 0))
   );
 };
 
