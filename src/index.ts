@@ -3,8 +3,6 @@ import { SceneObject } from "./scene_object/scene_object";
 import { Light } from "./lights/light";
 import { vec3 } from "gl-matrix";
 import { Scene } from "./scene/scene";
-import construct_3d_pipeline from "./pipelines/default_3d_pipeline";
-import default_3d_shader from "./shaders/default_3d.wgsl";
 
 const init_engine = async () => {
   // Init Canvas
@@ -95,6 +93,7 @@ const init_engine = async () => {
     model: "models/cube.obj",
     shader_path: "shaders/default_3d.wgsl",
     pipeline_label: "default_3d",
+    texture_diffuse: "textures/lol/dirt.jpg",
   });
 
   globals.scene.add_object(sceneObj);

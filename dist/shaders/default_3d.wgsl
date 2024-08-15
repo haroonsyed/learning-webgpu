@@ -25,9 +25,31 @@ struct VertexOutput {
 };
 
 @vertex
-fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @location(2) normal: vec4<f32>, @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
+fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @location(2) normal: vec4<f32>, @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {  
   var output: VertexOutput;
   var view_model = uniforms.view * uniforms.model;
+
+  // /// ================
+  // //  SANITY CHECK
+  // /// ================
+  // const tri_points = array(
+  //   vec2(0.0, 1),
+  //   vec2(-1, -1),
+  //   vec2(1, -1)
+  // );
+
+  // const tri_colors = array(
+  //   vec4(1.0, 0.0, 0.0, 1.0),
+  //   vec4(0.0, 1.0, 0.0, 1.0),
+  //   vec4(0.0, 0.0, 1.0, 1.0)
+  // );
+
+  // output.clip_position = vec4<f32>(tri_points[vertexIndex], 0.0, 1.0);
+  // output.world_position = tri_colors[vertexIndex];
+  // return output;
+  // /// ================
+  // //  SANITY CHECK
+  // /// ================
   
   output.clip_position = uniforms.projection * view_model * pos;
   output.world_position = (uniforms.model * pos);
@@ -44,6 +66,14 @@ fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @locat
 
 @fragment
 fn fs_main(@location(0) world_position: vec4<f32>, @location(1) tex_coord: vec4<f32>, @location(2) raw_normal: vec4<f32>) -> @location(0) vec4<f32> {
+
+  // /// ================
+  // //  SANITY CHECK
+  // /// ================
+  // return world_position;
+  // /// ================
+  // //  SANITY CHECK
+  // /// ================
 
   // Move default and configurable items like ambient strength to uniforms
   const ambient_strength: f32 = 0.1;

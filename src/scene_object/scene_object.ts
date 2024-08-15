@@ -150,41 +150,41 @@ class SceneObject {
   };
 
   update_uniform_data = (scene: Scene, pipeline: PipeLine) => {
-    const uniform_buffer = (
-      pipeline?.default_bindgroup_descriptor.entries as any
-    )[0].buffer as GPUBuffer;
-    const UNIFORM_DATA_SIZE = uniform_buffer.size;
+    if (!pipeline) {
+      return;
+    }
 
-    const view_matrix = scene.camera.get_view_matrix();
-    const projection_matrix = scene.camera.get_projection_matrix();
-    const light_count = scene.lights.length;
+    const uniform_buffer = (
+      (pipeline.default_bindgroup_descriptor.entries as GPUBindGroupEntry[])[0]
+        .resource as GPUBufferBinding
+    ).buffer as GPUBuffer;
+    const UNIFORM_DATA_SIZE = uniform_buffer.size;
 
     // Create a Float32Array to hold the uniform data
     const uniform_data = new Float32Array(UNIFORM_DATA_SIZE / 4); // 4 bytes per float
 
-    // Copy light count into the uniform data array
-    uniform_data[19] = light_count;
-
-    // Copy matrices into the uniform data array
-    uniform_data.set(view_matrix, 20);
-    uniform_data.set(projection_matrix, 36);
-
-    // Copy light data into the uniform data array
-    for (let i = 0; i < light_count; i++) {
-      const light_offset = 52 + i * 8;
-      uniform_data.set(scene.lights[i].position, light_offset);
-      uniform_data.set(scene.lights[i].color, light_offset + 4);
-    }
-
-    // Copy to gpu buffer
-    const non_object_specific_size_floats = 16 + 3;
-    globals.device.queue.writeBuffer(
-      uniform_buffer,
-      non_object_specific_size_floats * 4,
-      uniform_data,
-      non_object_specific_size_floats,
-      UNIFORM_DATA_SIZE - non_object_specific_size_floats
+    // Setup uniform data for object
+    const model_matrix = this.get_model_matrix();
+    uniform_data.set(model_matrix, 0);
+    uniform_data.set(
+      Float32Array.from([
+        ...this.get_model_matrix(),
+        this.has_texture_diffuse() ? 1.0 : 0.0,
+        this.has_texture_specular() ? 1.0 : 0.0,
+        this.has_texture_normal() ? 1.0 : 0.0,
+        scene.lights.length,
+        ...scene.camera.get_view_matrix(),
+        ...scene.camera.get_projection_matrix(),
+        ...scene.lights.reduce(
+          (acc, light) => acc.concat([...light.position, 0.0, ...light.color]),
+          [] as number[]
+        ),
+      ]),
+      0
     );
+
+    // Copy data to uniform buffer
+    globals.device.queue.writeBuffer(uniform_buffer, 0, uniform_data);
   };
 
   render = async (scene: Scene) => {
@@ -203,31 +203,14 @@ class SceneObject {
 
     // EVERYTHING BELOW SHOULD BE MOVED TO PIPELINE IN A .RENDER() METHOD. SceneObject need not worry about buffer formats, etc.
 
-    // Update uniform data
-    this.update_uniform_data(scene, pipeline);
-
     // Grab relevant data from the descriptor
     const descriptor = pipeline.default_bindgroup_descriptor;
-    const desciptor_entries = descriptor.entries as Array<GPUBindGroupEntry>;
-    const uniform_buffer_resource = desciptor_entries[0]
-      .resource as GPUBufferBinding;
-    const uniform_buffer = uniform_buffer_resource.buffer;
 
     // Set the bind group
     await this.set_bind_group(descriptor);
 
     // Update uniform data
-    const model_matrix = this.get_model_matrix();
-    globals.device.queue.writeBuffer(
-      uniform_buffer,
-      0,
-      Float32Array.from([
-        ...model_matrix,
-        this.has_texture_diffuse() ? 1.0 : 0.0,
-        this.has_texture_specular() ? 1.0 : 0.0,
-        this.has_texture_normal() ? 1.0 : 0.0,
-      ])
-    );
+    this.update_uniform_data(scene, pipeline);
 
     // Render the object
     const { render_pass } = globals;

@@ -33,9 +33,10 @@ type Default3DUniformData = {
   ];
 };
 
-const DEFAULT_3D_UNIFORM_DATA_SIZE = 4 * 4 + 4 + 4 * 4 + 4 * 4 + 10 * 4 * 2;
+const DEFAULT_3D_UNIFORM_DATA_SIZE_FLOAT =
+  4 * 4 + 4 + 4 * 4 + 4 * 4 + 10 * 4 * 2;
 
-const construct_3d_pipeline = (shader: string, shader_path: string) => {
+const construct_3d_pipeline = (shader_path: string, shader: string) => {
   // Get globals
   const { device, presentation_format } = globals;
 
@@ -128,7 +129,9 @@ const construct_3d_pipeline = (shader: string, shader_path: string) => {
     },
   });
 
-  const uniform_data_buffer = new Float32Array(DEFAULT_3D_UNIFORM_DATA_SIZE);
+  const uniform_data_buffer = new Float32Array(
+    DEFAULT_3D_UNIFORM_DATA_SIZE_FLOAT
+  );
   const uniform_buffer = create_gpu_buffer(
     uniform_data_buffer,
     GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -175,6 +178,4 @@ const construct_3d_pipeline = (shader: string, shader_path: string) => {
   );
 };
 
-// MAKE SURE TO REGISTER YOUR PIPELINES TO MANAGER
-register_pipeline_constructor(pipeline_label, construct_3d_pipeline);
-export default construct_3d_pipeline;
+export { construct_3d_pipeline, pipeline_label };
