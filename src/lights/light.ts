@@ -11,7 +11,12 @@ class Light extends SceneObject {
     color: vec3 = vec3.fromValues(1.0, 1.0, 1.0),
     intensity: number = 1.0
   ) {
-    super(id, name, "", position);
+    super({
+      id,
+      name,
+      model: "",
+      position,
+    });
     this.color = vec4.fromValues(color[0], color[1], color[2], intensity);
   }
 

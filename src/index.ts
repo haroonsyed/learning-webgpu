@@ -3,6 +3,8 @@ import { SceneObject } from "./scene_object/scene_object";
 import { Light } from "./lights/light";
 import { vec3 } from "gl-matrix";
 import { Scene } from "./scene/scene";
+import construct_3d_pipeline from "./pipelines/default_3d_pipeline";
+import default_3d_shader from "./shaders/default_3d.wgsl";
 
 const init_engine = async () => {
   // Init Canvas
@@ -87,9 +89,13 @@ const init_engine = async () => {
   // Setup scene
   globals.scene = new Scene();
 
-  const sceneObj = new SceneObject("0", "cube", "models/cube.obj");
-  sceneObj.texture_diffuse = "textures/wall/brickwall.jpg";
-  sceneObj.texture_normal = "textures/wall/brickwall_normal.jpg";
+  const sceneObj = new SceneObject({
+    id: "0",
+    name: "cube",
+    model: "models/cube.obj",
+    shader_path: "shaders/default_3d.wgsl",
+    pipeline_label: "default_3d",
+  });
 
   globals.scene.add_object(sceneObj);
   globals.scene.add_light(

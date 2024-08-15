@@ -2,6 +2,27 @@ import { globals } from "../globals";
 import { load_model, models } from "../model/model_loader";
 import { mat4, vec3 } from "gl-matrix";
 import { load_texture } from "../texture/texture_loader";
+import { Scene } from "../scene/scene";
+import {
+  get_registered_pipeline,
+  PipeLine,
+} from "../pipelines/pipeline_manager";
+
+type SceneObjectConstructionParams = {
+  id: string;
+  name: string;
+  model: string;
+  shader_path?: string;
+  pipeline_label?: string;
+  position?: vec3;
+  velocity?: vec3;
+  rotation?: vec3;
+  scale?: vec3;
+  texture_diffuse?: string;
+  texture_specular?: string;
+  texture_normal?: string;
+  texture_emissive?: string;
+};
 
 class SceneObject {
   id: string;
@@ -11,25 +32,29 @@ class SceneObject {
   velocity: vec3;
   rotation: vec3;
   scale: vec3;
+  shader_path: string | undefined;
+  pipeline_label: string | undefined;
   texture_diffuse: string | undefined;
   texture_specular: string | undefined;
   texture_normal: string | undefined;
   texture_emissive: string | undefined;
   bind_group: GPUBindGroup | undefined;
 
-  constructor(
-    id: string,
-    name: string,
-    model: string,
-    position: vec3 = vec3.create(),
-    velocity: vec3 = vec3.create(),
-    rotation: vec3 = vec3.create(),
+  constructor({
+    id,
+    name,
+    model,
+    shader_path = undefined,
+    pipeline_label = undefined,
+    position = vec3.create(),
+    velocity = vec3.create(),
+    rotation = vec3.create(),
     scale = vec3.fromValues(1.0, 1.0, 1.0),
-    texture_diffuse: string | undefined = undefined,
-    texture_specular: string | undefined = undefined,
-    texture_normal: string | undefined = undefined,
-    texture_emissive: string | undefined = undefined
-  ) {
+    texture_diffuse = undefined,
+    texture_specular = undefined,
+    texture_normal = undefined,
+    texture_emissive = undefined,
+  }: SceneObjectConstructionParams) {
     this.id = id;
     this.name = name;
     this.position = position;
@@ -41,7 +66,17 @@ class SceneObject {
     this.texture_specular = texture_specular;
     this.texture_normal = texture_normal;
     this.texture_emissive = texture_emissive;
+    this.shader_path = shader_path;
+    this.pipeline_label = pipeline_label;
   }
+
+  get_pipeline = async () => {
+    if (this.shader_path === undefined || this.pipeline_label === undefined) {
+      return undefined;
+    }
+
+    return get_registered_pipeline(this.shader_path!, this.pipeline_label!);
+  };
 
   get_model_matrix = () => {
     const model_matrix = mat4.create();
@@ -113,12 +148,66 @@ class SceneObject {
     // Rotate the object relative to current rotation
     this.rotation[1] += 0.001;
   };
-  render = async (descriptor: GPUBindGroupDescriptor) => {
-    if (this.model === undefined || this.model === "") {
+
+  update_uniform_data = (scene: Scene, pipeline: PipeLine) => {
+    const uniform_buffer = (
+      pipeline?.default_bindgroup_descriptor.entries as any
+    )[0].buffer as GPUBuffer;
+    const UNIFORM_DATA_SIZE = uniform_buffer.size;
+
+    const view_matrix = scene.camera.get_view_matrix();
+    const projection_matrix = scene.camera.get_projection_matrix();
+    const light_count = scene.lights.length;
+
+    // Create a Float32Array to hold the uniform data
+    const uniform_data = new Float32Array(UNIFORM_DATA_SIZE / 4); // 4 bytes per float
+
+    // Copy light count into the uniform data array
+    uniform_data[19] = light_count;
+
+    // Copy matrices into the uniform data array
+    uniform_data.set(view_matrix, 20);
+    uniform_data.set(projection_matrix, 36);
+
+    // Copy light data into the uniform data array
+    for (let i = 0; i < light_count; i++) {
+      const light_offset = 52 + i * 8;
+      uniform_data.set(scene.lights[i].position, light_offset);
+      uniform_data.set(scene.lights[i].color, light_offset + 4);
+    }
+
+    // Copy to gpu buffer
+    const non_object_specific_size_floats = 16 + 3;
+    globals.device.queue.writeBuffer(
+      uniform_buffer,
+      non_object_specific_size_floats * 4,
+      uniform_data,
+      non_object_specific_size_floats,
+      UNIFORM_DATA_SIZE - non_object_specific_size_floats
+    );
+  };
+
+  render = async (scene: Scene) => {
+    const pipeline = await this.get_pipeline();
+
+    if (
+      this.model === undefined ||
+      this.model === "" ||
+      pipeline === undefined
+    ) {
       return;
     }
 
+    // Bind the pipeline
+    globals.render_pass.setPipeline(pipeline.gpu_pipeline);
+
+    // EVERYTHING BELOW SHOULD BE MOVED TO PIPELINE IN A .RENDER() METHOD. SceneObject need not worry about buffer formats, etc.
+
+    // Update uniform data
+    this.update_uniform_data(scene, pipeline);
+
     // Grab relevant data from the descriptor
+    const descriptor = pipeline.default_bindgroup_descriptor;
     const desciptor_entries = descriptor.entries as Array<GPUBindGroupEntry>;
     const uniform_buffer_resource = desciptor_entries[0]
       .resource as GPUBufferBinding;

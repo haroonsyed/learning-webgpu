@@ -21,7 +21,12 @@ class Camera extends SceneObject {
     name: string,
     position: vec3 = vec3.fromValues(2.0, 2.0, 4.0)
   ) {
-    super(id, name, "", position);
+    super({
+      id,
+      name,
+      model: "",
+      position,
+    });
     this.look_at(vec3.fromValues(0.0, 0.0, 0.0));
   }
 
