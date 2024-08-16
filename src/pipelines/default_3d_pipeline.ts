@@ -1,6 +1,6 @@
 import { mat4, vec4 } from "gl-matrix";
 import { globals } from "../globals";
-import { PipeLine, register_pipeline_constructor } from "./pipeline_manager";
+import { PipeLine } from "./pipeline_manager";
 import { create_gpu_buffer } from "../gpu_util";
 import { get_default_texture } from "../texture/texture_loader";
 

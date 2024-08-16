@@ -26,9 +26,10 @@ class Scene {
       "Calculating Physics, Queuing rendering commands for this frame..."
     );
 
-    this.objects.forEach((object) => object.update());
-    this.lights.forEach((light) => light.update());
-    this.camera.update();
+    const update_promises = [...this.objects, ...this.lights, this.camera].map(
+      (object) => object.update(this)
+    );
+    await Promise.all(update_promises);
   };
 
   render = async () => {

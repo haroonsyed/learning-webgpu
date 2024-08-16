@@ -23,6 +23,7 @@ type EngineGlobals = {
   context: GPUCanvasContext;
   presentation_format: GPUTextureFormat;
   render_pass: GPURenderPassEncoder;
+  compute_pass: GPUComputePassEncoder;
   key_state: Map<string, boolean>;
   key_press: Map<string, boolean>;
   mouse_state: MouseState;
@@ -39,8 +40,9 @@ let globals: EngineGlobals = {
   device: {} as GPUDevice,
   canvas: {} as HTMLCanvasElement,
   context: {} as GPUCanvasContext,
-  presentation_format: "bgra8unorm" as GPUTextureFormat,
+  presentation_format: "rgba8unorm",
   render_pass: {} as GPURenderPassEncoder,
+  compute_pass: {} as GPUComputePassEncoder,
   key_state: new Map<string, boolean>(),
   key_press: new Map<string, boolean>(),
   mouse_state: {

@@ -11,7 +11,7 @@ import {
 type SceneObjectConstructionParams = {
   id: string;
   name: string;
-  model: string;
+  model?: string;
   shader_path?: string;
   pipeline_label?: string;
   position?: vec3;
@@ -43,7 +43,7 @@ class SceneObject {
   constructor({
     id,
     name,
-    model,
+    model = "",
     shader_path = undefined,
     pipeline_label = undefined,
     position = vec3.create(),
@@ -144,10 +144,7 @@ class SceneObject {
     globals.render_pass.setBindGroup(0, this.bind_group!);
   };
 
-  update = () => {
-    // Rotate the object relative to current rotation
-    this.rotation[1] += 0.001;
-  };
+  update = async (scene: Scene) => {};
 
   update_uniform_data = (scene: Scene, pipeline: PipeLine) => {
     if (!pipeline) {
@@ -198,8 +195,26 @@ class SceneObject {
       return;
     }
 
+    globals.render_pass = globals.command_encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: globals.texture_view,
+          clearValue: [0.0, 0.0, 0.0, 1],
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+      depthStencilAttachment: {
+        view: globals.depth_view,
+        depthClearValue: 1.0,
+        stencilClearValue: 0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    });
+
     // Bind the pipeline
-    globals.render_pass.setPipeline(pipeline.gpu_pipeline);
+    globals.render_pass.setPipeline(pipeline.gpu_pipeline as GPURenderPipeline);
 
     // EVERYTHING BELOW SHOULD BE MOVED TO PIPELINE IN A .RENDER() METHOD. SceneObject need not worry about buffer formats, etc.
 
@@ -213,13 +228,14 @@ class SceneObject {
     this.update_uniform_data(scene, pipeline);
 
     // Render the object
-    const { render_pass } = globals;
     const { vertex_data_gpu, indices_gpu, index_count } =
       await this.get_model_data();
-    render_pass.setVertexBuffer(0, vertex_data_gpu);
-    render_pass.setIndexBuffer(indices_gpu, "uint32");
-    render_pass.drawIndexed(index_count, 1, 0, 0, 0);
+    globals.render_pass.setVertexBuffer(0, vertex_data_gpu);
+    globals.render_pass.setIndexBuffer(indices_gpu, "uint32");
+    globals.render_pass.drawIndexed(index_count, 1, 0, 0, 0);
+
+    globals.render_pass.end();
   };
 }
 
-export { SceneObject };
+export { SceneObject, SceneObjectConstructionParams };

@@ -3,11 +3,19 @@ import {
   construct_3d_pipeline,
 } from "./default_3d_pipeline";
 
+import {
+  pipeline_label as default_2d_compute_pipeline_label,
+  construct_2d_compute_pipeline,
+} from "./default_2d_compute_pipeline";
+
 // PIPELINE_CONSTRUCTORS is a map of pipeline_label -> constructor
 const registered_pipeline_constructors = new Map<
   string,
   (shader_path: string, shader: string) => PipeLine
->([[default_3d_label, construct_3d_pipeline]]);
+>([
+  [default_3d_label, construct_3d_pipeline],
+  [default_2d_compute_pipeline_label, construct_2d_compute_pipeline],
+]);
 const register_pipeline_constructor = (
   pipeline_label: string,
   constructor: (shader_path: string, shader: string) => PipeLine
@@ -54,10 +62,11 @@ const get_registered_pipeline = async (
       return undefined;
     }
 
-    registered_pipelines.set(
-      pipeline_key,
-      pipeline_constructor(shader_path, shader)
-    );
+    // registered_pipelines.set(
+    //   pipeline_key,
+    //   pipeline_constructor(shader_path, shader)
+    // );
+    return pipeline_constructor(shader_path, shader);
   }
 
   return registered_pipelines.get(pipeline_key);
@@ -66,14 +75,14 @@ const get_registered_pipeline = async (
 class PipeLine {
   pipeline_label: string;
   shader: string;
-  gpu_pipeline: GPURenderPipeline;
+  gpu_pipeline: GPURenderPipeline | GPUComputePipeline;
   default_bindgroup_descriptor: GPUBindGroupDescriptor;
   pipeline_key: string;
 
   constructor(
     pipeline_label: string,
     shader: string,
-    pipeline: GPURenderPipeline,
+    pipeline: GPURenderPipeline | GPUComputePipeline,
     default_bindgroup_descriptor: GPUBindGroupDescriptor
   ) {
     this.pipeline_label = pipeline_label;

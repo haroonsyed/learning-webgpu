@@ -3,6 +3,7 @@ import { SceneObject } from "./scene_object/scene_object";
 import { Light } from "./lights/light";
 import { vec3 } from "gl-matrix";
 import { Scene } from "./scene/scene";
+import { ComputeObject } from "./compute/compute_object";
 
 const init_engine = async () => {
   // Init Canvas
@@ -21,10 +22,12 @@ const init_engine = async () => {
 
   // Get context
   const context = canvas?.getContext("webgpu") as unknown as GPUCanvasContext; // Weird type bug going on rn
-  const presentation_format = navigator.gpu.getPreferredCanvasFormat();
+  // const presentation_format = navigator.gpu.getPreferredCanvasFormat();
+  const presentation_format = globals.presentation_format;
   context?.configure({
     device,
     format: presentation_format,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING,
   });
 
   // Init listeners
@@ -87,19 +90,35 @@ const init_engine = async () => {
   // Setup scene
   globals.scene = new Scene();
 
-  const sceneObj = new SceneObject({
-    id: "0",
-    name: "cube",
-    model: "models/cube.obj",
-    shader_path: "shaders/default_3d.wgsl",
-    pipeline_label: "default_3d",
-    texture_diffuse: "textures/lol/dirt.jpg",
-  });
+  // const sceneObj = new SceneObject({
+  //   id: "0",
+  //   name: "cube",
+  //   model: "models/cube.obj",
+  //   shader_path: "shaders/default_3d.wgsl",
+  //   pipeline_label: "default_3d",
+  //   texture_diffuse: "textures/lol/dirt.jpg",
+  // });
 
-  globals.scene.add_object(sceneObj);
-  globals.scene.add_light(
-    new Light("1", "light", vec3.fromValues(2.0, 2.0, 0))
-  );
+  // globals.scene.add_object(sceneObj);
+  // globals.scene.add_light(
+  //   new Light("1", "light", vec3.fromValues(2.0, 2.0, 0))
+  // );
+
+  // const compute_obj = new ComputeObject(
+  //   "0",
+  //   "compute",
+  //   "compute_shaders/compute.wgsl",
+  //   [canvas.width, canvas.height, 1]
+  // );
+
+  const compute_obj = new ComputeObject({
+    id: "0",
+    name: "compute",
+    compute_shader: "compute_shaders/compute.wgsl",
+    compute_pipeline: "default_2d_compute",
+    workgroup_size: [canvas.width, canvas.height, 1],
+  });
+  globals.scene.add_object(compute_obj);
 };
 
 const update = async () => {
@@ -118,6 +137,10 @@ const render = async () => {
 };
 
 const render_frame = async () => {
+  // Create command pipeline
+  globals.current_frame_start = performance.now();
+  globals.command_encoder = globals.device.createCommandEncoder();
+
   // Initialize Textures for this frame
   globals.texture_view = globals.context.getCurrentTexture().createView();
   globals.depth_view = globals.device
@@ -128,37 +151,17 @@ const render_frame = async () => {
         height: globals.canvas.height,
         depthOrArrayLayers: 1,
       },
-      format: "depth24plus",
+      format: globals.presentation_format,
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
     .createView();
 
-  // Create command pipeline
-  globals.current_frame_start = performance.now();
-  globals.command_encoder = globals.device.createCommandEncoder();
-  globals.render_pass = globals.command_encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: globals.texture_view,
-        clearValue: [0.0, 0.0, 0.0, 1],
-        loadOp: "clear",
-        storeOp: "store",
-      },
-    ],
-    depthStencilAttachment: {
-      view: globals.depth_view,
-      depthClearValue: 1.0,
-      stencilClearValue: 0,
-      depthLoadOp: "clear",
-      depthStoreOp: "store",
-    },
-  });
-
   // Enqueue rendering commands
   await render();
 
+  // console.log(globals.texture_view);
+
   // Execute rendering commands
-  globals.render_pass.end();
   globals.device.queue.submit([globals.command_encoder.finish()]);
   globals.current_frame++;
 };
@@ -174,7 +177,7 @@ const game_loop = async () => {
   if (quit_pressed()) {
     console.log("Game loop ended");
   } else {
-    requestAnimationFrame(game_loop);
+    globals.device.queue.onSubmittedWorkDone().then(game_loop);
   }
 };
 
