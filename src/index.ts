@@ -4,6 +4,8 @@ import { Light } from "./lights/light";
 import { vec3 } from "gl-matrix";
 import { Scene } from "./scene/scene";
 import { ComputeObject } from "./compute/compute_object";
+import { Default3DPipeLine } from "./pipelines/default_3d_pipeline";
+import { Default2DComputePipeLine } from "./pipelines/default_2d_compute_pipeline";
 
 const init_engine = async () => {
   // Init Canvas
@@ -90,35 +92,28 @@ const init_engine = async () => {
   // Setup scene
   globals.scene = new Scene();
 
-  // const sceneObj = new SceneObject({
-  //   id: "0",
-  //   name: "cube",
-  //   model: "models/cube.obj",
-  //   shader_path: "shaders/default_3d.wgsl",
-  //   pipeline_label: "default_3d",
-  //   texture_diffuse: "textures/lol/dirt.jpg",
-  // });
-
-  // globals.scene.add_object(sceneObj);
-  // globals.scene.add_light(
-  //   new Light("1", "light", vec3.fromValues(2.0, 2.0, 0))
-  // );
-
-  // const compute_obj = new ComputeObject(
-  //   "0",
-  //   "compute",
-  //   "compute_shaders/compute.wgsl",
-  //   [canvas.width, canvas.height, 1]
-  // );
-
-  const compute_obj = new ComputeObject({
+  const sceneObj = new SceneObject({
     id: "0",
-    name: "compute",
-    compute_shader: "compute_shaders/compute.wgsl",
-    compute_pipeline: "default_2d_compute",
-    workgroup_size: [canvas.width, canvas.height, 1],
+    name: "cube",
+    model: "models/cube.obj",
+    shader_path: "shaders/default_3d.wgsl",
+    pipeline: Default3DPipeLine,
+    texture_diffuse: "textures/dirt/dirt.jpg",
   });
-  globals.scene.add_object(compute_obj);
+
+  globals.scene.add_object(sceneObj);
+  globals.scene.add_light(
+    new Light("1", "light", vec3.fromValues(2.0, 2.0, 0))
+  );
+
+  // const compute_obj = new ComputeObject({
+  //   id: "0",
+  //   name: "compute",
+  //   workgroup_size: [canvas.width, canvas.height, 1],
+  //   pipeline: Default2DComputePipeLine,
+  //   shader_path: "compute_shaders/compute.wgsl",
+  // });
+  // globals.scene.add_object(compute_obj);
 };
 
 const update = async () => {
@@ -151,7 +146,7 @@ const render_frame = async () => {
         height: globals.canvas.height,
         depthOrArrayLayers: 1,
       },
-      format: globals.presentation_format,
+      format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
     .createView();

@@ -4,7 +4,6 @@ struct LightUniformData{
   color: vec4<f32>, // Includes intensity in the alpha channel
 };
 struct Uniforms {
-  model: mat4x4<f32>,
   diffuse_strength: f32,
   specular_strength: f32,
   normal_strength: f32,
@@ -24,10 +23,13 @@ struct VertexOutput {
   @location(2) normal : vec4<f32>,
 };
 
+@group(0) @binding(5) var<storage, read> model_transforms: array<mat4x4<f32>>;
+
+
 @vertex
-fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @location(2) normal: vec4<f32>, @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {  
+fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @location(2) normal: vec4<f32>, @builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VertexOutput {  
   var output: VertexOutput;
-  var view_model = uniforms.view * uniforms.model;
+  var view_model = uniforms.view * model_transforms[instanceIndex];
 
   // /// ================
   // //  SANITY CHECK
@@ -52,9 +54,9 @@ fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @locat
   // /// ================
   
   output.clip_position = uniforms.projection * view_model * pos;
-  output.world_position = (uniforms.model * pos);
+  output.world_position = (model_transforms[instanceIndex] * pos);
   output.tex_coord = uv_coord;
-  output.normal = (uniforms.model * normal); // Should I do TBN?
+  output.normal = (model_transforms[instanceIndex] * normal); // Should I do TBN?
   return output;
 }
 

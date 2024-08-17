@@ -2,6 +2,7 @@ import { mat4, vec3 } from "gl-matrix";
 import { SceneObject } from "../scene_object/scene_object";
 import { globals } from "../globals";
 import { Scene } from "../scene/scene";
+import { Default3DPipeLine } from "../pipelines/default_3d_pipeline";
 
 enum CameraMovementMode {
   ROTATE_ORIGIN,
@@ -27,6 +28,7 @@ class Camera extends SceneObject {
       name,
       model: "",
       position,
+      pipeline: Default3DPipeLine,
     });
     this.look_at(vec3.fromValues(0.0, 0.0, 0.0));
   }

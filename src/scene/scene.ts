@@ -1,5 +1,6 @@
 import { Camera } from "../camera/camera";
 import { Light } from "../lights/light";
+import { PipeLine } from "../pipelines/pipeline_manager";
 import { SceneObject } from "../scene_object/scene_object";
 
 class Scene {
@@ -33,8 +34,34 @@ class Scene {
   };
 
   render = async () => {
-    const render_promises = this.objects.map((object) => object.render(this));
-    await Promise.all(render_promises);
+    // Might be slow to get unique pipelines this way.
+    let pipelines = await Promise.all(
+      this.objects.map((object) => object.get_pipeline())
+    );
+    const unique_pipelines = pipelines.reduce((acc, pipeline) => {
+      if (pipeline && !acc.includes(pipeline)) {
+        acc.push(pipeline);
+      }
+      return acc;
+    }, [] as PipeLine[]);
+
+    const ordered_pipelines = unique_pipelines.reduce((acc, pipeline) => {
+      const order = pipeline.order;
+      if (!acc.has(order)) {
+        acc.set(order, []);
+      }
+      acc.get(order)!.push(pipeline);
+      return acc;
+    }, new Map() as Map<number, PipeLine[]>);
+
+    const ordered_keys = Array.from(ordered_pipelines.keys()).sort();
+    for (const key of ordered_keys) {
+      const pipelines = ordered_pipelines.get(key)!;
+      const render_promises = pipelines.map((pipeline) =>
+        pipeline.render(this)
+      );
+      await Promise.all(render_promises);
+    }
   };
 }
 

@@ -42,7 +42,7 @@ const load_texture = async (texture_path: string | undefined) => {
       GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
-  // Upload local texture data to gpu
+  // Upload local texture data to gpu texture
   globals.device.queue.copyExternalImageToTexture(
     { source: texture_data },
     { texture: texture_gpu },

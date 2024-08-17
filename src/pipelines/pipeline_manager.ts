@@ -1,28 +1,4 @@
-import {
-  pipeline_label as default_3d_label,
-  construct_3d_pipeline,
-} from "./default_3d_pipeline";
-
-import {
-  pipeline_label as default_2d_compute_pipeline_label,
-  construct_2d_compute_pipeline,
-} from "./default_2d_compute_pipeline";
-
-// PIPELINE_CONSTRUCTORS is a map of pipeline_label -> constructor
-const registered_pipeline_constructors = new Map<
-  string,
-  (shader_path: string, shader: string) => PipeLine
->([
-  [default_3d_label, construct_3d_pipeline],
-  [default_2d_compute_pipeline_label, construct_2d_compute_pipeline],
-]);
-const register_pipeline_constructor = (
-  pipeline_label: string,
-  constructor: (shader_path: string, shader: string) => PipeLine
-) => {
-  console.log("Registering pipeline constructor for ", pipeline_label);
-  registered_pipeline_constructors.set(pipeline_label, constructor);
-};
+import { Scene } from "../scene/scene";
 
 // SHADERS is a map of shader_name -> shader
 const shaders = new Map<string, string>(); // shader_name -> shader
@@ -35,62 +11,80 @@ const get_shader = async (shader_path: string) => {
   return shaders.get(shader_path)!;
 };
 
-// PIPELINES is a map of shader_name + pipeline_label -> pipeline
 const registered_pipelines = new Map<string, PipeLine>(); // shader_name + pipeline_label -> pipeline
 
-const get_pipeline_key = (shader_path: string, pipeline_label: string) => {
-  return `${shader_path}_${pipeline_label}`;
-};
-
-const get_registered_pipeline = async (
-  shader_path?: string,
-  pipeline_label?: string
-) => {
-  if (!shader_path || !pipeline_label) {
-    return undefined;
-  }
-
-  const pipeline_key = get_pipeline_key(shader_path, pipeline_label);
-
-  if (!registered_pipelines.has(pipeline_key)) {
-    const shader = await get_shader(shader_path);
-    const pipeline_constructor =
-      registered_pipeline_constructors.get(pipeline_label);
-    if (!pipeline_constructor) {
-      console.log("Could not find pipeline constructor for ", pipeline_label);
-      console.log("Available constructors: ", registered_pipeline_constructors);
-      return undefined;
-    }
-
-    // registered_pipelines.set(
-    //   pipeline_key,
-    //   pipeline_constructor(shader_path, shader)
-    // );
-    return pipeline_constructor(shader_path, shader);
-  }
-
-  return registered_pipelines.get(pipeline_key);
-};
-
-class PipeLine {
-  pipeline_label: string;
-  shader: string;
+abstract class PipeLine {
+  static pipeline_label: string = "default";
+  shader_path: string;
   gpu_pipeline: GPURenderPipeline | GPUComputePipeline;
-  default_bindgroup_descriptor: GPUBindGroupDescriptor;
   pipeline_key: string;
+  order: number;
 
   constructor(
     pipeline_label: string,
-    shader: string,
+    shader_path: string,
     pipeline: GPURenderPipeline | GPUComputePipeline,
-    default_bindgroup_descriptor: GPUBindGroupDescriptor
+    priority: number = 0
   ) {
-    this.pipeline_label = pipeline_label;
-    this.shader = shader;
-    this.pipeline_key = get_pipeline_key(shader, pipeline_label);
+    this.shader_path = shader_path;
+    this.pipeline_key = PipeLine.get_pipeline_key(shader_path, pipeline_label);
     this.gpu_pipeline = pipeline;
-    this.default_bindgroup_descriptor = default_bindgroup_descriptor;
+    this.order = priority;
+
+    // Register this pipeline
+    registered_pipelines.set(this.pipeline_key, this);
   }
+
+  static get_pipeline_key = (shader_path: string, pipeline_label: string) => {
+    return `${shader_path}_${pipeline_label}`;
+  };
+
+  // So this is interesting because it is abstract (workaround via error) and static. Not something possible in java lol.
+  //
+  // Why static?
+  //  This is a builder for actual implementations and gives you the instance.
+  //
+  // Why not just a constructor/inheritance?
+  // Because constructors cannot be async, so I have to use a static async function to build the pipeline.
+  //  The alternative is to have the constructor of derived class call the async function with a flag that the pipeline is ready...but I don't want to check flags.
+  //
+  // Why abstract?
+  // I want this abstract because every pipeline will have a unique layout and construction requirements, so I have to defer the implementation.
+  //  This is only possible because of
+  //
+  // Why protected?
+  // I need the get_pipeline function to call this so it can check cached pipelines before constructing a new one. So I don't want general consumers to see this.
+  protected static async construct_pipeline(
+    shader_path: string
+  ): Promise<PipeLine> {
+    throw new Error(
+      "Please implement logic for creating your pipeline, make sure to call super() so the pipeline is registered."
+    );
+  }
+
+  static async get_pipeline(pipeline: typeof PipeLine, shader_path: string) {
+    // Check if pipeline is cached
+    if (PipeLine.get_registered_pipeline(shader_path, pipeline.name)) {
+      return PipeLine.get_registered_pipeline(shader_path, pipeline.name);
+    }
+
+    // Else construct the pipeline
+    const pipeline_instance = await pipeline.construct_pipeline(shader_path);
+    return pipeline_instance;
+  }
+
+  static get_registered_pipeline = (
+    shader_path: string,
+    pipeline_label: string
+  ) => {
+    return registered_pipelines.get(
+      PipeLine.get_pipeline_key(shader_path, pipeline_label)
+    );
+  };
+
+  // A pipeline can take whatever data it needs from the scene and render internally.
+  // The reason it isn't per object is because the pipeline will add all objects to a vbo and render them all at once.
+  abstract render(scene: Scene): Promise<void>;
 }
 
-export { PipeLine, register_pipeline_constructor, get_registered_pipeline };
+export { PipeLine, get_shader };
