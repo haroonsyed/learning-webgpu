@@ -202,7 +202,9 @@ class Default3DPipeLine extends PipeLine {
     const texture_normal = await load_texture(object_0.texture_normal);
 
     // Setup the model transforms
-    const model_transforms = new Float32Array([...object_0.get_model_matrix()]);
+    const model_transforms = new Float32Array(
+      relevant_scene_objects.flatMap((obj) => [...obj.get_model_matrix()])
+    );
 
     const needed_model_transform_size = relevant_scene_objects.length * 16 * 4;
     const current_model_transforms_size = this.model_transforms?.size ?? 0;
@@ -214,8 +216,6 @@ class Default3DPipeLine extends PipeLine {
         model_transforms,
         GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       );
-      console.log(model_transforms);
-      console.log(this.model_transforms.size);
     } else {
       // Just write the data
       globals.device.queue.writeBuffer(

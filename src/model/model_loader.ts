@@ -33,6 +33,7 @@ const load_model = async (model_path: string | undefined) => {
 
   // Parse data from obj file
   let max_position = vec4.create();
+  let min_position = vec4.create();
   model.split("\n").forEach((line) => {
     const split_line = line.split(" ");
     const type = split_line[0];
@@ -45,10 +46,13 @@ const load_model = async (model_path: string | undefined) => {
         1.0
       );
 
-      max_position =
-        vec4.length(position) > vec4.length(max_position)
-          ? position
-          : max_position;
+      max_position[0] = Math.max(max_position[0], position[0]);
+      max_position[1] = Math.max(max_position[1], position[1]);
+      max_position[2] = Math.max(max_position[2], position[2]);
+      min_position[0] = Math.min(min_position[0], position[0]);
+      min_position[1] = Math.min(min_position[1], position[1]);
+      min_position[2] = Math.min(min_position[2], position[2]);
+
       positions.push(position);
     } else if (type === "vn") {
       const normal = vec4.fromValues(
@@ -74,6 +78,18 @@ const load_model = async (model_path: string | undefined) => {
       vertices_before_indexed.push(split_line[3]);
     }
   });
+
+  // Recenter the model
+  const center_x = min_position[0] + (max_position[0] - min_position[0]) / 2;
+  const center_y = min_position[1] + (max_position[1] - min_position[1]) / 2;
+  const center_z = min_position[2] + (max_position[2] - min_position[2]) / 2;
+
+  // // Subtract the center from each position
+  // positions.forEach((position) => {
+  //   position[0] -= center_x;
+  //   position[1] -= center_y;
+  //   position[2] -= center_z;
+  // });
 
   // Build up the indexed vertices
   const indices: GLint[] = [];

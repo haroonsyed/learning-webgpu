@@ -29,7 +29,6 @@ struct VertexOutput {
 @vertex
 fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @location(2) normal: vec4<f32>, @builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VertexOutput {  
   var output: VertexOutput;
-  var view_model = uniforms.view * model_transforms[instanceIndex];
 
   // /// ================
   // //  SANITY CHECK
@@ -53,7 +52,7 @@ fn vs_main(@location(0) pos: vec4<f32>, @location(1) uv_coord: vec4<f32>, @locat
   // //  SANITY CHECK
   // /// ================
   
-  output.clip_position = uniforms.projection * view_model * pos;
+  output.clip_position = uniforms.projection * uniforms.view * model_transforms[instanceIndex] * pos;
   output.world_position = (model_transforms[instanceIndex] * pos);
   output.tex_coord = uv_coord;
   output.normal = (model_transforms[instanceIndex] * normal); // Should I do TBN?
@@ -118,7 +117,8 @@ fn fs_main(@location(0) world_position: vec4<f32>, @location(1) tex_coord: vec4<
     // out_color += light_intensity * ( (ambient_strength + diffuse_strength) * diffuse_texture * light_color + specular_strength * specular_color);
   
     var to_light = normalize(light_position - world_position.xyz);
-    var diffuse_strength = max(dot(normal, to_light), 0.0);
+    // var diffuse_strength = max(dot(normal, to_light), 0.0);
+    var diffuse_strength = 1.0;
     out_color += light_intensity * ( (ambient_strength + diffuse_strength) * diffuse_texture ) * light_color;
   }
 

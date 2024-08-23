@@ -64,8 +64,12 @@ abstract class PipeLine {
 
   static async get_pipeline(pipeline: typeof PipeLine, shader_path: string) {
     // Check if pipeline is cached
-    if (PipeLine.get_registered_pipeline(shader_path, pipeline.name)) {
-      return PipeLine.get_registered_pipeline(shader_path, pipeline.name);
+    const pipeline_key = PipeLine.get_pipeline_key(
+      shader_path,
+      pipeline.pipeline_label
+    );
+    if (PipeLine.get_registered_pipeline(pipeline_key)) {
+      return PipeLine.get_registered_pipeline(pipeline_key);
     }
 
     // Else construct the pipeline
@@ -73,13 +77,8 @@ abstract class PipeLine {
     return pipeline_instance;
   }
 
-  static get_registered_pipeline = (
-    shader_path: string,
-    pipeline_label: string
-  ) => {
-    return registered_pipelines.get(
-      PipeLine.get_pipeline_key(shader_path, pipeline_label)
-    );
+  static get_registered_pipeline = (pipeline_key: string) => {
+    return registered_pipelines.get(pipeline_key);
   };
 
   // A pipeline can take whatever data it needs from the scene and render internally.

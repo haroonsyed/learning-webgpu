@@ -62,19 +62,31 @@ class SceneObject {
     this.texture_emissive = texture_emissive;
     this.shader_path = shader_path;
     this.pipeline = pipeline;
+
+    // Init pipeline for faster retrieval
+    // See if there is some better place to init the pipeline
+    this.get_pipeline();
   }
 
   get_pipeline = async () => {
     return PipeLine.get_pipeline(this.pipeline, this.shader_path ?? "");
   };
 
+  get_pipeline_key = () => {
+    return PipeLine.get_pipeline_key(
+      this.shader_path ?? "",
+      this.pipeline.pipeline_label ?? ""
+    );
+  };
+
   get_model_matrix = () => {
+    // Note these operations appear in reverse order because they are right multiplied
     const model_matrix = mat4.create();
+    mat4.translate(model_matrix, model_matrix, this.position);
     mat4.rotateX(model_matrix, model_matrix, this.rotation[0]);
     mat4.rotateY(model_matrix, model_matrix, this.rotation[1]);
     mat4.rotateZ(model_matrix, model_matrix, this.rotation[2]);
     mat4.scale(model_matrix, model_matrix, this.scale);
-    mat4.translate(model_matrix, model_matrix, this.position);
     return model_matrix;
   };
 

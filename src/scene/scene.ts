@@ -35,15 +35,13 @@ class Scene {
 
   render = async () => {
     // Might be slow to get unique pipelines this way.
-    let pipelines = await Promise.all(
-      this.objects.map((object) => object.get_pipeline())
+    let unique_pipeline_keys = new Set(
+      this.objects.map((object) => object.get_pipeline_key())
     );
-    const unique_pipelines = pipelines.reduce((acc, pipeline) => {
-      if (pipeline && !acc.includes(pipeline)) {
-        acc.push(pipeline);
-      }
-      return acc;
-    }, [] as PipeLine[]);
+
+    const unique_pipelines = Array.from(unique_pipeline_keys)
+      .map((pipeline_key) => PipeLine.get_registered_pipeline(pipeline_key))
+      .filter((pipeline) => pipeline !== undefined) as PipeLine[];
 
     const ordered_pipelines = unique_pipelines.reduce((acc, pipeline) => {
       const order = pipeline.order;

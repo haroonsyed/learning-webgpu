@@ -92,16 +92,29 @@ const init_engine = async () => {
   // Setup scene
   globals.scene = new Scene();
 
-  const sceneObj = new SceneObject({
-    id: "0",
-    name: "cube",
-    model: "models/cube.obj",
-    shader_path: "shaders/default_3d.wgsl",
-    pipeline: Default3DPipeLine,
-    texture_diffuse: "textures/dirt/dirt.jpg",
-  });
+  const num_objects = 10000;
+  const radius = 50;
+  for (let i = 0; i < num_objects; i++) {
+    const angle = (i / num_objects) * 10 * Math.PI; // Calculate the angle for each object
+    const x = (i / num_objects) * radius * Math.cos(angle); // Calculate the x coordinate
+    const z = (i / num_objects) * radius * Math.sin(angle); // Calculate the z coordinate
 
-  globals.scene.add_object(sceneObj);
+    globals.scene.add_object(
+      new SceneObject({
+        id: i.toString(),
+        name: "cube",
+        model: "models/cube.obj",
+        shader_path: "shaders/default_3d.wgsl",
+        pipeline: Default3DPipeLine,
+        texture_diffuse: "textures/dirt/dirt.jpg",
+        position: vec3.fromValues(x, 0, z),
+        rotation: vec3.fromValues(i * 0.238, i * 0.3, i * 0.66),
+        scale: vec3.fromValues(0.1, 0.1, 0.1),
+      })
+    );
+  }
+
+  // globals.scene.add_object(sceneObj);
   globals.scene.add_light(
     new Light("1", "light", vec3.fromValues(2.0, 2.0, 0))
   );
