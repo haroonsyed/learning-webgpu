@@ -6,6 +6,7 @@ import { Scene } from "./scene/scene";
 import { ComputeObject } from "./compute/compute_object";
 import { Default3DPipeLine } from "./pipelines/default_3d_pipeline";
 import { Default2DComputePipeLine } from "./pipelines/default_2d_compute_pipeline";
+import { System } from "./system/system";
 
 const init_engine = async () => {
   // Init Canvas
@@ -92,7 +93,7 @@ const init_engine = async () => {
   // Setup scene
   globals.scene = new Scene();
 
-  const num_objects = 10000;
+  const num_objects = 100;
   const radius = 50;
   for (let i = 0; i < num_objects; i++) {
     const angle = (i / num_objects) * 10 * Math.PI; // Calculate the angle for each object
@@ -113,6 +114,18 @@ const init_engine = async () => {
       })
     );
   }
+
+  globals.scene.add_object(
+    new SceneObject({
+      id: "101",
+      name: "dragon",
+      model: "models/dragon.obj",
+      shader_path: "shaders/default_3d.wgsl",
+      pipeline: Default3DPipeLine,
+      position: vec3.fromValues(0, 0, 0),
+      scale: vec3.fromValues(10, 10, 10),
+    })
+  );
 
   // globals.scene.add_object(sceneObj);
   globals.scene.add_light(
@@ -194,4 +207,4 @@ const main = async () => {
   game_loop();
 };
 
-document.addEventListener("DOMContentLoaded", main);
+document.addEventListener("DOMContentLoaded", System.start);

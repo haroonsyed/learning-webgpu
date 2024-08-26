@@ -8,7 +8,7 @@ class Scene {
   camera: Camera;
   objects: SceneObject[];
 
-  constructor() {
+  constructor(scene_path: string = "") {
     this.lights = [];
     this.camera = new Camera("-1", "camera");
     this.objects = [];
