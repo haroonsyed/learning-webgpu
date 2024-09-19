@@ -6,7 +6,7 @@ import { Scene } from "./scene/scene";
 import { ComputeObject } from "./compute/compute_object";
 import { Default3DPipeLine } from "./pipelines/default_3d_pipeline";
 import { Default2DComputePipeLine } from "./pipelines/default_2d_compute_pipeline";
-import { System } from "./system/system";
+import { SystemCore } from "./system/system_core";
 
 const init_engine = async () => {
   // Init Canvas
@@ -207,4 +207,4 @@ const main = async () => {
   game_loop();
 };
 
-document.addEventListener("DOMContentLoaded", System.start);
+document.addEventListener("DOMContentLoaded", SystemCore.start);

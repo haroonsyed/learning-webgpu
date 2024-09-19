@@ -6,7 +6,7 @@ import { SystemInputHandler } from "./system_input";
 
 // I only intend on having one system, so this class will be static.
 // Simplifies access, and may have performance benefits.
-class System {
+class SystemCore {
   static scene: Scene;
   static config: SystemConfig;
 
@@ -24,32 +24,45 @@ class System {
 
   static async start() {
     // Init WebGPU
-    await System.init_webgpu();
+    await SystemCore.init_webgpu();
 
     // Init external listeners (convert these to just call on event system)
     window.addEventListener("resize", () => {
-      System.canvas.width = window.innerWidth;
-      System.canvas.height = window.innerHeight;
+      SystemCore.canvas.width = window.innerWidth;
+      SystemCore.canvas.height = window.innerHeight;
     });
 
     // Setup core systems
-    System.config = new SystemConfig();
-    System.scene = new Scene(System.config.start_scene);
-    System.system_input = new SystemInputHandler();
-    System.current_frame = 0;
+    SystemCore.config = new SystemConfig(); // Load from file later
+    SystemCore.scene = new Scene(SystemCore.config.start_scene);
+
+    // TEMP SCENE INIT
+    // const compute_obj = new ComputeObject({
+    //   id: "0",
+    //   name: "compute",
+    //   workgroup_size: [SystemCore.canvas.width, SystemCore.canvas.height, 1],
+    //   pipeline: Default2DComputePipeLine,
+    //   shader_path: "compute_shaders/compute.wgsl",
+    // });
+    // SystemCore.scene.add_object(compute_obj);
+
+    // SystemCore.system_input = new SystemInputHandler();
+    // SystemCore.current_frame = 0;
 
     // Internal Listener
-    System.event_system.subscribe(
+    SystemCore.event_system.subscribe(
       EventEnum.EVENT_KEY_PRESS,
       async (system_input: SystemInputHandler) => {
         if (system_input.key_press.has("q")) {
-          await System.stop();
+          await SystemCore.stop();
         }
       }
     );
 
     // Kick off event loop
-    System.event_loop();
+    console.log("SystemCore initialized, starting event loop...");
+    await SystemCore.event_system.publish(EventEnum.EVENT_GAME_START); // Let subsystems initialize themselves
+    SystemCore.event_loop();
   }
 
   static async init_webgpu() {
@@ -77,35 +90,29 @@ class System {
     });
 
     // Set system variables
-    System.canvas = canvas;
-    System.adapter = adapter;
-    System.device = device;
-    System.context = context;
-    System.presentation_format = presentation_format;
-    System.command_encoder = System.device.createCommandEncoder();
+    SystemCore.canvas = canvas;
+    SystemCore.adapter = adapter;
+    SystemCore.device = device;
+    SystemCore.context = context;
+    SystemCore.presentation_format = presentation_format;
+    SystemCore.command_encoder = SystemCore.device.createCommandEncoder();
   }
 
   static async stop() {
-    System.running = false;
-    await System.event_system.publish(EventEnum.EVENT_GAME_END);
+    SystemCore.running = false;
+    await SystemCore.event_system.publish(EventEnum.EVENT_GAME_END);
     console.log("Engine stopped.");
   }
 
   static async event_loop() {
-    if (!System.running) return;
-    // console.log("Frame: ", System.current_frame);
+    if (!SystemCore.running) return;
+    // console.log("Frame: ", SystemCore.current_frame);
 
-    await System.event_system.publish(EventEnum.EVENT_LOOP_START);
-    System.current_frame++;
-    await System.event_system.publish(EventEnum.EVENT_LOOP_END);
-    requestAnimationFrame(() => System.event_loop());
-    // Replace the below with event loop style code. SHould have a pub/sub system with async callbacks and await Promise.all() for subbed events.
-    // A scene will have resource managers that will load/cache resources (textures, pipelines, shaders, models etc). Unloading a scene will unload all resources cleanly.
-    // System.scene.update();
-    // System.scene.render();
-    // System.current_frame++;
-    // requestAnimationFrame(() => System.event_loop());
+    await SystemCore.event_system.publish(EventEnum.EVENT_LOOP_START);
+    SystemCore.current_frame++;
+    await SystemCore.event_system.publish(EventEnum.EVENT_LOOP_END);
+    requestAnimationFrame(() => SystemCore.event_loop());
   }
 }
 
-export { System };
+export { SystemCore };

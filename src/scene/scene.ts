@@ -2,16 +2,32 @@ import { Camera } from "../camera/camera";
 import { Light } from "../lights/light";
 import { PipeLine } from "../pipelines/pipeline_manager";
 import { SceneObject } from "../scene_object/scene_object";
+import { EventEnum } from "../system/event_enums";
+import { SystemCore } from "../system/system_core";
 
 class Scene {
   lights: Light[];
   camera: Camera;
   objects: SceneObject[];
 
+  // TODO: Load scene from file
+  // A scene will have resource managers that will load/cache resources (textures, pipelines, shaders, models etc). Unloading a scene will unload all resources cleanly.
+  // In other words, resource managers should not be static, rather classes that are instantiated per scene.
   constructor(scene_path: string = "") {
     this.lights = [];
     this.camera = new Camera("-1", "camera");
     this.objects = [];
+
+    // Register listeners
+    SystemCore.event_system.subscribe(EventEnum.EVENT_LOOP_START, async () => {
+      await this.update();
+      SystemCore.event_system.publish(EventEnum.SCENE_UPDATE_END);
+    });
+
+    SystemCore.event_system.subscribe(EventEnum.SCENE_UPDATE_END, async () => {
+      await this.render();
+      SystemCore.event_system.publish(EventEnum.SCENE_RENDER_END);
+    });
   }
 
   add_light = (light: Light) => {

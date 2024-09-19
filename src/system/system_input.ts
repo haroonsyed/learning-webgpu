@@ -1,5 +1,5 @@
 import { EventEnum } from "./event_enums";
-import { System } from "./system";
+import { SystemCore } from "./system_core";
 
 type MouseState = {
   x: number;
@@ -39,17 +39,17 @@ class SystemInputHandler {
     window.addEventListener("keydown", (e) => {
       this.key_state.set(e.key, true);
 
-      System.event_system.publish(EventEnum.EVENT_KEY_DOWN, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_KEY_DOWN, this);
     });
     window.addEventListener("keyup", (e) => {
       this.key_state.set(e.key, false);
 
-      System.event_system.publish(EventEnum.EVENT_KEY_UP, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_KEY_UP, this);
     });
     window.addEventListener("keypress", (e) => {
       this.key_press.set(e.key, true);
 
-      System.event_system.publish(EventEnum.EVENT_KEY_PRESS, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_KEY_PRESS, this);
     });
     window.addEventListener("mousemove", (e) => {
       this.mouse_state.dx = e.movementX;
@@ -57,7 +57,7 @@ class SystemInputHandler {
       this.mouse_state.x = e.x;
       this.mouse_state.y = e.y;
 
-      System.event_system.publish(EventEnum.EVENT_MOUSE_MOVE, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_MOVE, this);
     });
     window.addEventListener("mousedown", (e) => {
       if (e.button === 0) {
@@ -68,7 +68,7 @@ class SystemInputHandler {
         this.mouse_state.right = true;
       }
 
-      System.event_system.publish(EventEnum.EVENT_MOUSE_DOWN, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_DOWN, this);
     });
     window.addEventListener("mouseup", (e) => {
       if (e.button === 0) {
@@ -79,7 +79,7 @@ class SystemInputHandler {
         this.mouse_state.right = false;
       }
 
-      System.event_system.publish(EventEnum.EVENT_MOUSE_UP, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_UP, this);
     });
     window.addEventListener("click", (e) => {
       if (e.button === 0) {
@@ -90,11 +90,11 @@ class SystemInputHandler {
         this.mouse_state.right_click = true;
       }
 
-      System.event_system.publish(EventEnum.EVENT_MOUSE_CLICK, this);
+      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_CLICK, this);
     });
 
     // Init internal listeners
-    System.event_system.subscribe(EventEnum.EVENT_LOOP_END, async () => {
+    SystemCore.event_system.subscribe(EventEnum.EVENT_LOOP_END, async () => {
       this.key_press.clear();
       this.mouse_state.dx = 0;
       this.mouse_state.dy = 0;
