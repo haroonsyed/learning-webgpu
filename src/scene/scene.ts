@@ -3,31 +3,58 @@ import { Light } from "../lights/light";
 import { PipeLine } from "../pipelines/pipeline_manager";
 import { SceneObject } from "../scene_object/scene_object";
 import { EventEnum } from "../system/event_enums";
+import { GameEventSystem } from "../system/event_system";
 import { SystemCore } from "../system/system_core";
+import { TextureManager } from "../texture/texture_manager";
 
 class Scene {
-  lights: Light[];
-  camera: Camera;
-  objects: SceneObject[];
+  active: boolean = true;
+
+  event_system: GameEventSystem = new GameEventSystem();
+  texture_manager: TextureManager = new TextureManager();
+
+  canvas?: HTMLCanvasElement;
+  texture_view?: GPUTextureView;
+  depth_texture_view?: GPUTextureView;
+
+  presentation_format: GPUTextureFormat = "rgba8unorm"; // Change this if you want HDR or something else. I am sticking with this as its most supported.
+
+  lights: Light[] = [];
+  camera: Camera = new Camera("-1", "camera");
+  objects: SceneObject[] = [];
 
   // TODO: Load scene from file
   // A scene will have resource managers that will load/cache resources (textures, pipelines, shaders, models etc). Unloading a scene will unload all resources cleanly.
   // In other words, resource managers should not be static, rather classes that are instantiated per scene.
-  constructor(scene_path: string = "") {
-    this.lights = [];
-    this.camera = new Camera("-1", "camera");
-    this.objects = [];
+  constructor(scene_path: string = "", canvas_id: string = "canvas") {
+    // Init Canvas
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    if (!canvas) {
+      alert("Canvas not found");
+      throw new Error("Canvas not found");
+    }
+
+    canvas.getContext("webgpu")?.configure({
+      device: SystemCore.device,
+      format: this.presentation_format,
+      usage:
+        GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING, // Added storage binding for direct output for compute shaders
+    });
+
+    // Init scene from file...
 
     // Register listeners
-    SystemCore.event_system.subscribe(EventEnum.EVENT_LOOP_START, async () => {
-      await this.update();
-      SystemCore.event_system.publish(EventEnum.SCENE_UPDATE_END);
-    });
+    this.event_system.subscribe(EventEnum.SCENE_FRAME_START, this.update);
+    this.event_system.subscribe(EventEnum.SCENE_UPDATE_END, this.render);
+    this.event_system.subscribe(EventEnum.SCENE_RENDER_END, this.advance_frame);
+    this.event_system.subscribe(EventEnum.SCENE_FRAME_END, this.frame_end);
+  }
 
-    SystemCore.event_system.subscribe(EventEnum.SCENE_UPDATE_END, async () => {
-      await this.render();
-      SystemCore.event_system.publish(EventEnum.SCENE_RENDER_END);
-    });
+  async advance_frame() {
+    await this.frame_start();
   }
 
   add_light = (light: Light) => {
@@ -38,7 +65,46 @@ class Scene {
     this.objects.push(object);
   };
 
+  frame_start = async () => {
+    const context = this.canvas?.getContext("webgpu");
+    if (!context) {
+      return;
+    }
+
+    // Initialize render textures for this frame
+    this.texture_view = context?.getCurrentTexture().createView();
+    this.depth_texture_view = SystemCore.device
+      .createTexture({
+        label: "Depth Texture",
+        size: {
+          width: this.canvas!.width,
+          height: this.canvas!.height,
+          depthOrArrayLayers: 1,
+        },
+        format: "depth24plus",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      })
+      .createView();
+
+    this.event_system.publish(EventEnum.SCENE_FRAME_START);
+  };
+
+  frame_end = async () => {
+    // Cleanup
+    this.texture_view = undefined;
+    this.depth_texture_view = undefined;
+
+    this.event_system.publish(EventEnum.SCENE_FRAME_END);
+  };
+
   update = async () => {
+    if (SystemCore.system_input.key_press.get("q") || !this.active) {
+      this.active = false;
+      // TODO: Should probably publish something about scene end
+      return;
+    }
+
+    this.event_system.publish(EventEnum.SCENE_UPDATE_START);
     console.log(
       "Calculating Physics, Queuing rendering commands for this frame..."
     );
@@ -47,9 +113,13 @@ class Scene {
       (object) => object.update(this)
     );
     await Promise.all(update_promises);
+
+    this.event_system.publish(EventEnum.SCENE_UPDATE_END);
   };
 
   render = async () => {
+    this.event_system.publish(EventEnum.SCENE_RENDER_START);
+
     // Might be slow to get unique pipelines this way.
     let unique_pipeline_keys = new Set(
       this.objects.map((object) => object.get_pipeline_key())
@@ -76,6 +146,8 @@ class Scene {
       );
       await Promise.all(render_promises);
     }
+
+    this.event_system.publish(EventEnum.SCENE_RENDER_END);
   };
 }
 

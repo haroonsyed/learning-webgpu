@@ -38,26 +38,18 @@ class SystemInputHandler {
     // Init external listeners
     window.addEventListener("keydown", (e) => {
       this.key_state.set(e.key, true);
-
-      SystemCore.event_system.publish(EventEnum.EVENT_KEY_DOWN, this);
     });
     window.addEventListener("keyup", (e) => {
       this.key_state.set(e.key, false);
-
-      SystemCore.event_system.publish(EventEnum.EVENT_KEY_UP, this);
     });
     window.addEventListener("keypress", (e) => {
       this.key_press.set(e.key, true);
-
-      SystemCore.event_system.publish(EventEnum.EVENT_KEY_PRESS, this);
     });
     window.addEventListener("mousemove", (e) => {
       this.mouse_state.dx = e.movementX;
       this.mouse_state.dy = e.movementY;
       this.mouse_state.x = e.x;
       this.mouse_state.y = e.y;
-
-      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_MOVE, this);
     });
     window.addEventListener("mousedown", (e) => {
       if (e.button === 0) {
@@ -67,8 +59,6 @@ class SystemInputHandler {
       } else if (e.button === 2) {
         this.mouse_state.right = true;
       }
-
-      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_DOWN, this);
     });
     window.addEventListener("mouseup", (e) => {
       if (e.button === 0) {
@@ -78,8 +68,6 @@ class SystemInputHandler {
       } else if (e.button === 2) {
         this.mouse_state.right = false;
       }
-
-      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_UP, this);
     });
     window.addEventListener("click", (e) => {
       if (e.button === 0) {
@@ -89,19 +77,24 @@ class SystemInputHandler {
       } else if (e.button === 2) {
         this.mouse_state.right_click = true;
       }
-
-      SystemCore.event_system.publish(EventEnum.EVENT_MOUSE_CLICK, this);
     });
+  }
 
-    // Init internal listeners
-    SystemCore.event_system.subscribe(EventEnum.EVENT_LOOP_END, async () => {
-      this.key_press.clear();
-      this.mouse_state.dx = 0;
-      this.mouse_state.dy = 0;
-      this.mouse_state.left_click = false;
-      this.mouse_state.right_click = false;
-      this.mouse_state.middle_click = false;
-    });
+  reset() {
+    this.key_state.clear();
+    this.key_press.clear();
+    this.mouse_state = {
+      x: 0,
+      y: 0,
+      dx: 0,
+      dy: 0,
+      left: false,
+      right: false,
+      middle: false,
+      left_click: false,
+      right_click: false,
+      middle_click: false,
+    };
   }
 }
 

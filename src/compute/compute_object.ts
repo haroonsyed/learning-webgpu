@@ -1,4 +1,3 @@
-import { PipeLine } from "../pipelines/pipeline_manager";
 import {
   SceneObject,
   SceneObjectConstructionParams,
