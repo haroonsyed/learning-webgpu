@@ -1,6 +1,5 @@
 import { vec3, vec4 } from "gl-matrix";
 import { SceneObject } from "../scene_object/scene_object";
-import { Default3DPipeLine } from "../pipelines/default_3d_pipeline";
 
 class Light extends SceneObject {
   color: vec4;
@@ -17,7 +16,6 @@ class Light extends SceneObject {
       name,
       model: "",
       position,
-      pipeline: Default3DPipeLine,
     });
     this.color = vec4.fromValues(color[0], color[1], color[2], intensity);
   }

@@ -1,6 +1,3 @@
-import { EventEnum } from "./event_enums";
-import { SystemCore } from "./system_core";
-
 type MouseState = {
   x: number;
   y: number;

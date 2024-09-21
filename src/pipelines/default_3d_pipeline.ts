@@ -1,7 +1,7 @@
 import { mat4, vec4 } from "gl-matrix";
 import { globals } from "../globals";
 import { get_shader, PipeLine } from "./pipeline_manager";
-import { create_gpu_buffer } from "../gpu_util";
+import { create_gpu_buffer } from "../util/gpu_util";
 import { get_default_texture, load_texture } from "../texture/texture_loader";
 import { Scene } from "../scene/scene";
 
@@ -75,7 +75,6 @@ const bind_group_layout_descriptor: GPUBindGroupLayoutDescriptor = {
 };
 
 class Default3DPipeLine extends PipeLine {
-  static pipeline_label: string = "default_3d";
   model_transforms: GPUBuffer | undefined;
   uniform_buffer: GPUBuffer | undefined;
 

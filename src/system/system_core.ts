@@ -1,5 +1,4 @@
 import { Scene } from "../scene/scene";
-import { EventEnum } from "./event_enums";
 import { SystemConfig } from "./system_config";
 import { SystemInputHandler } from "./system_input";
 

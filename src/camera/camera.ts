@@ -1,8 +1,7 @@
 import { mat4, vec3 } from "gl-matrix";
 import { SceneObject } from "../scene_object/scene_object";
-import { globals } from "../globals";
 import { Scene } from "../scene/scene";
-import { Default3DPipeLine } from "../pipelines/default_3d_pipeline";
+import { SystemCore } from "../system/system_core";
 
 enum CameraMovementMode {
   ROTATE_ORIGIN,
@@ -28,7 +27,6 @@ class Camera extends SceneObject {
       name,
       model: "",
       position,
-      pipeline: Default3DPipeLine,
     });
     this.look_at(vec3.fromValues(0.0, 0.0, 0.0));
   }
@@ -71,13 +69,15 @@ class Camera extends SceneObject {
   };
 
   update = async (scene: Scene) => {
-    if (globals.key_press.get("`")) {
+    const { key_press, key_state, mouse_state } = SystemCore.system_input;
+    const { canvas } = scene;
+
+    if (key_press.get("`")) {
       console.log("toggling camera mode");
       if (this.movement_mode === CameraMovementMode.ROTATE_ORIGIN) {
         // Enable pointer lock
         this.movement_mode = CameraMovementMode.FREE;
-        // document.body.requestPointerLock();
-        globals.canvas.requestPointerLock();
+        canvas?.requestPointerLock();
       } else if (this.movement_mode === CameraMovementMode.FREE) {
         // Disable pointer lock
         document.exitPointerLock();
@@ -88,8 +88,8 @@ class Camera extends SceneObject {
     }
 
     if (this.movement_mode === CameraMovementMode.ROTATE_ORIGIN) {
-      if (globals.key_state.get("a") || globals.key_state.get("d")) {
-        const frame_rotation_speed = globals.key_state.get("a")
+      if (key_state.get("a") || key_state.get("d")) {
+        const frame_rotation_speed = key_state.get("a")
           ? this.rotation_speed
           : -this.rotation_speed;
         const rotation_matrix = mat4.create();
@@ -104,11 +104,11 @@ class Camera extends SceneObject {
         vec3.transformMat4(this.position, this.position, rotation_matrix);
       }
     } else if (this.movement_mode === CameraMovementMode.FREE) {
-      if (globals.mouse_state.dx || globals.mouse_state.dy) {
+      if (mouse_state.dx || mouse_state.dy) {
         const camera_forward = this.get_camera_forward();
         const camera_right = this.get_camera_right();
-        const dx = globals.mouse_state.dx * this.mouse_sensitivity;
-        const dy = globals.mouse_state.dy * this.mouse_sensitivity;
+        const dx = mouse_state.dx * this.mouse_sensitivity;
+        const dy = mouse_state.dy * this.mouse_sensitivity;
 
         const rotation_matrix = mat4.create();
         mat4.rotate(rotation_matrix, rotation_matrix, -dx, this.up);
@@ -122,8 +122,8 @@ class Camera extends SceneObject {
         vec3.add(this.look_at_target, this.position, new_camera_forward);
       }
 
-      if (globals.key_state.get("w") || globals.key_state.get("s")) {
-        const frame_translation_speed = globals.key_state.get("w")
+      if (key_state.get("w") || key_state.get("s")) {
+        const frame_translation_speed = key_state.get("w")
           ? this.movement_speed
           : -this.movement_speed;
         const forward = this.get_camera_forward();
@@ -132,8 +132,8 @@ class Camera extends SceneObject {
         vec3.add(this.look_at_target, this.look_at_target, forward);
       }
 
-      if (globals.key_state.get("a") || globals.key_state.get("d")) {
-        const frame_translation_speed = globals.key_state.get("a")
+      if (key_state.get("a") || key_state.get("d")) {
+        const frame_translation_speed = key_state.get("a")
           ? -this.movement_speed
           : this.movement_speed;
         const right = this.get_camera_right();

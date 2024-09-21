@@ -1,15 +1,13 @@
 import { ComputeObject } from "../compute/compute_object";
-import { globals } from "../globals";
 import { Scene } from "../scene/scene";
-import { get_shader, PipeLine } from "./pipeline_manager";
+import { SystemCore } from "../system/system_core";
+import { PipeLine } from "./pipeline";
 
 class Default2DComputePipeLine extends PipeLine {
-  static pipeline_key: string = "default_2d_compute";
-
   // Necessary to construct asynchonously
-  protected static async construct_pipeline(shader_path: string) {
-    const shader = await get_shader(shader_path);
-    const { device, presentation_format } = globals;
+  protected static async construct_pipeline(shader_path: string, scene: Scene) {
+    const shader = await scene.shader_manager.get_shader(shader_path);
+    const { device } = SystemCore;
 
     const module = device.createShaderModule({
       code: shader,
@@ -23,11 +21,7 @@ class Default2DComputePipeLine extends PipeLine {
       },
     });
 
-    return new Default2DComputePipeLine(
-      Default2DComputePipeLine.pipeline_label,
-      shader_path,
-      pipeline
-    );
+    return new Default2DComputePipeLine(shader_path, pipeline);
   }
 
   async render(scene: Scene): Promise<void> {
@@ -36,41 +30,41 @@ class Default2DComputePipeLine extends PipeLine {
       (object) =>
         PipeLine.get_pipeline_key(
           object.shader_path ?? "",
-          object.pipeline.pipeline_label ?? ""
+          object.pipeline?.pipeline_label ?? ""
         ) === this.pipeline_key
     );
 
-    if (relevant_compute_objects.length === 0) {
+    if (relevant_compute_objects.length === 0 || !scene.texture_view) {
       return;
     }
 
-    globals.compute_pass = globals.command_encoder.beginComputePass();
-    globals.compute_pass.setPipeline(this.gpu_pipeline as GPUComputePipeline);
+    const compute_pass = SystemCore.command_encoder.beginComputePass();
+    compute_pass.setPipeline(this.gpu_pipeline as GPUComputePipeline);
 
     const default_bindgroup_descriptor: GPUBindGroupDescriptor = {
       layout: this.gpu_pipeline.getBindGroupLayout(0),
       entries: [
         {
           binding: 0,
-          resource: globals.texture_view, // This needs to be recreated every frame
+          resource: scene.texture_view, // This needs to be recreated every frame
         },
       ],
     };
-    globals.compute_pass.setBindGroup(
+    compute_pass.setBindGroup(
       0,
-      globals.device.createBindGroup(default_bindgroup_descriptor)
+      SystemCore.device.createBindGroup(default_bindgroup_descriptor)
     );
 
     relevant_compute_objects.forEach((obj) => {
       const compute_obj = obj as ComputeObject;
-      globals.compute_pass.dispatchWorkgroups(
+      compute_pass.dispatchWorkgroups(
         compute_obj.workgroup_size[0],
         compute_obj.workgroup_size[1],
         compute_obj.workgroup_size[2]
       );
     });
 
-    globals.compute_pass.end();
+    compute_pass.end();
     return;
   }
 }

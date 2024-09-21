@@ -1,6 +1,8 @@
 import { Camera } from "../camera/camera";
 import { Light } from "../lights/light";
-import { PipeLine } from "../pipelines/pipeline_manager";
+import { PipeLine } from "../pipelines/pipeline";
+import { PipeLineManager } from "../pipelines/pipeline_manager";
+import { ShaderManager } from "../pipelines/shader_manager";
 import { SceneObject } from "../scene_object/scene_object";
 import { EventEnum } from "../system/event_enums";
 import { GameEventSystem } from "../system/event_system";
@@ -12,6 +14,8 @@ class Scene {
 
   event_system: GameEventSystem = new GameEventSystem();
   texture_manager: TextureManager = new TextureManager();
+  pipeline_manager: PipeLineManager = new PipeLineManager();
+  shader_manager: ShaderManager = new ShaderManager();
 
   canvas?: HTMLCanvasElement;
   texture_view?: GPUTextureView;
@@ -63,6 +67,8 @@ class Scene {
 
   add_object = (object: SceneObject) => {
     this.objects.push(object);
+
+    // this.pipeline_manager.register_pipeline(???);
   };
 
   frame_start = async () => {
@@ -120,14 +126,9 @@ class Scene {
   render = async () => {
     this.event_system.publish(EventEnum.SCENE_RENDER_START);
 
-    // Might be slow to get unique pipelines this way.
-    let unique_pipeline_keys = new Set(
-      this.objects.map((object) => object.get_pipeline_key())
+    const unique_pipelines = Array.from(
+      this.pipeline_manager.registered_pipelines.values()
     );
-
-    const unique_pipelines = Array.from(unique_pipeline_keys)
-      .map((pipeline_key) => PipeLine.get_registered_pipeline(pipeline_key))
-      .filter((pipeline) => pipeline !== undefined) as PipeLine[];
 
     const ordered_pipelines = unique_pipelines.reduce((acc, pipeline) => {
       const order = pipeline.order;

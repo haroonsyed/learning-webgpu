@@ -1,4 +1,3 @@
-import { globals } from "../globals";
 import { SystemCore } from "../system/system_core";
 
 class TextureManager {
@@ -13,12 +12,15 @@ class TextureManager {
   get_default_texture() {
     return SystemCore.device.createTexture({
       size: [1, 1],
-      format: globals.presentation_format,
+      format: "rgba8unorm",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
   }
 
-  async load_texture(texture_path: string | undefined) {
+  async load_texture(
+    texture_path: string | undefined,
+    format: GPUTextureFormat = "rgba8unorm"
+  ) {
     if (texture_path === undefined || texture_path === "") {
       return this.empty_texture;
     }
@@ -35,9 +37,9 @@ class TextureManager {
     });
 
     // Create gpu texture
-    const texture_gpu = globals.device.createTexture({
+    const texture_gpu = SystemCore.device.createTexture({
       label: texture_path,
-      format: globals.presentation_format,
+      format: format,
       size: [texture_data.width, texture_data.height],
       usage:
         GPUTextureUsage.TEXTURE_BINDING |
@@ -46,7 +48,7 @@ class TextureManager {
     });
 
     // Upload local texture data to gpu texture
-    globals.device.queue.copyExternalImageToTexture(
+    SystemCore.device.queue.copyExternalImageToTexture(
       { source: texture_data },
       { texture: texture_gpu },
       [texture_data.width, texture_data.height]
