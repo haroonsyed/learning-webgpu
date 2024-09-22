@@ -1,11 +1,11 @@
-import { globals } from "./globals";
+import { SystemCore } from "../system/system_core";
 
 // Create a GPU buffer from an array of data, exact (+- padding) size
 const create_gpu_buffer = <T extends ArrayBufferView>(
   data: T,
   usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
 ) => {
-  const { device } = globals;
+  const { device } = SystemCore;
   const buffer = device.createBuffer({
     size: data.byteLength,
     usage,

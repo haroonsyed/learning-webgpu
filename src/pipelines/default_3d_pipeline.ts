@@ -1,9 +1,8 @@
 import { mat4, vec4 } from "gl-matrix";
-import { globals } from "../globals";
-import { get_shader, PipeLine } from "./pipeline_manager";
-import { create_gpu_buffer } from "../gpu_util";
-import { get_default_texture, load_texture } from "../texture/texture_loader";
+import { create_gpu_buffer } from "../util/gpu_util";
 import { Scene } from "../scene/scene";
+import { SystemCore } from "../system/system_core";
+import { PipeLine } from "./pipeline";
 
 const DEFAULT_3D_UNIFORM_DATA_SIZE_FLOAT = 4 + 4 * 4 + 4 * 4 + 10 * 4 * 2;
 type Default3DLightUniformData = {
@@ -75,16 +74,21 @@ const bind_group_layout_descriptor: GPUBindGroupLayoutDescriptor = {
 };
 
 class Default3DPipeLine extends PipeLine {
-  static pipeline_label: string = "default_3d";
   model_transforms: GPUBuffer | undefined;
   uniform_buffer: GPUBuffer | undefined;
 
+  static get_pipeline_label(): string {
+    return "default_3d";
+  }
+
   // Necessary to construct asynchonously
-  protected static async construct_pipeline(shader_path: string) {
-    const shader = await get_shader(shader_path);
+  static async construct_pipeline(shader_path: string, scene: Scene) {
+    const { shader_manager } = scene;
+    const shader = await shader_manager.get_shader(shader_path);
 
     // Get globals
-    const { device, presentation_format } = globals;
+    const { device } = SystemCore;
+    const { presentation_format } = scene;
 
     // Compile shaders used in this pipeline
     const module = device.createShaderModule({
@@ -142,11 +146,7 @@ class Default3DPipeLine extends PipeLine {
       },
     });
 
-    const default_3d_pipeline = new Default3DPipeLine(
-      "default_3d",
-      shader_path,
-      pipeline
-    );
+    const default_3d_pipeline = new Default3DPipeLine(shader_path, pipeline);
 
     default_3d_pipeline.uniform_buffer = create_gpu_buffer(
       new Float32Array(DEFAULT_3D_UNIFORM_DATA_SIZE_FLOAT),
@@ -157,38 +157,44 @@ class Default3DPipeLine extends PipeLine {
   }
 
   async render(scene: Scene): Promise<void> {
+    const { device, command_encoder } = SystemCore;
+    const { texture_manager, texture_view, depth_texture_view } = scene;
+
+    const pipeline_key = Default3DPipeLine.get_pipeline_key(this.shader_path);
+
     // Get relevant scene objects
     // Potentially slow to filter objects this way
+    // Change to store objects in scene structured by pipeline key (and more filters like texture)
     const relevant_scene_objects = scene.objects.filter(
-      (object) =>
-        PipeLine.get_pipeline_key(
-          object.shader_path ?? "",
-          object.pipeline.pipeline_label ?? ""
-        ) === this.pipeline_key
+      (object) => object.pipeline_key === pipeline_key
     );
 
-    if (relevant_scene_objects.length === 0) {
+    if (
+      relevant_scene_objects.length === 0 ||
+      !texture_view ||
+      !depth_texture_view
+    ) {
       return;
     }
 
-    globals.render_pass = globals.command_encoder.beginRenderPass({
+    const render_pass = command_encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: globals.texture_view,
+          view: texture_view,
           clearValue: [0.0, 0.0, 0.0, 1],
           loadOp: "clear",
           storeOp: "store",
         },
       ],
       depthStencilAttachment: {
-        view: globals.depth_view,
+        view: depth_texture_view,
         depthClearValue: 1.0,
         stencilClearValue: 0,
         depthLoadOp: "clear",
         depthStoreOp: "store",
       },
     });
-    globals.render_pass.setPipeline(this.gpu_pipeline as GPURenderPipeline);
+    render_pass.setPipeline(this.gpu_pipeline as GPURenderPipeline);
 
     // Get textures
     // For now I will render with same texture
@@ -197,9 +203,15 @@ class Default3DPipeLine extends PipeLine {
     const has_texture_diffuse = object_0.has_texture_diffuse() ? 1.0 : 0.0;
     const has_texture_specular = object_0.has_texture_specular() ? 1.0 : 0.0;
     const has_texture_normal = object_0.has_texture_normal() ? 1.0 : 0.0;
-    const texture_diffuse = await load_texture(object_0.texture_diffuse);
-    const texture_specular = await load_texture(object_0.texture_specular);
-    const texture_normal = await load_texture(object_0.texture_normal);
+    const texture_diffuse = await texture_manager.load_texture(
+      object_0.texture_diffuse
+    );
+    const texture_specular = await texture_manager.load_texture(
+      object_0.texture_specular
+    );
+    const texture_normal = await texture_manager.load_texture(
+      object_0.texture_normal
+    );
 
     // Setup the model transforms
     const model_transforms = new Float32Array(
@@ -218,11 +230,7 @@ class Default3DPipeLine extends PipeLine {
       );
     } else {
       // Just write the data
-      globals.device.queue.writeBuffer(
-        this.model_transforms!,
-        0,
-        model_transforms
-      );
+      device.queue.writeBuffer(this.model_transforms!, 0, model_transforms);
     }
 
     // Setup the uniform data
@@ -238,7 +246,7 @@ class Default3DPipeLine extends PipeLine {
         [] as number[]
       ),
     ]);
-    globals.device.queue.writeBuffer(this.uniform_buffer!, 0, uniform_data);
+    device.queue.writeBuffer(this.uniform_buffer!, 0, uniform_data);
 
     // Setup bindgroup
     const bindgroup_descriptor: GPUBindGroupDescriptor = {
@@ -254,7 +262,7 @@ class Default3DPipeLine extends PipeLine {
         },
         {
           binding: 1,
-          resource: globals.device.createSampler({}),
+          resource: device.createSampler({}),
         },
         {
           // Diffuse texture
@@ -282,17 +290,14 @@ class Default3DPipeLine extends PipeLine {
         },
       ],
     };
-    globals.render_pass.setBindGroup(
-      0,
-      globals.device.createBindGroup(bindgroup_descriptor)
-    ); // Is this expensive?
+    render_pass.setBindGroup(0, device.createBindGroup(bindgroup_descriptor)); // Is this expensive?
 
     // Render each object
     const { vertex_data_gpu, indices_gpu, index_count } =
       await object_0.get_model_data();
-    globals.render_pass.setVertexBuffer(0, vertex_data_gpu);
-    globals.render_pass.setIndexBuffer(indices_gpu, "uint32");
-    globals.render_pass.drawIndexed(
+    render_pass.setVertexBuffer(0, vertex_data_gpu);
+    render_pass.setIndexBuffer(indices_gpu, "uint32");
+    render_pass.drawIndexed(
       index_count,
       relevant_scene_objects.length,
       0,
@@ -300,7 +305,7 @@ class Default3DPipeLine extends PipeLine {
       0
     );
 
-    globals.render_pass.end();
+    render_pass.end();
   }
 }
 

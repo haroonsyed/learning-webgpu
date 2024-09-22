@@ -1,14 +1,14 @@
 import { load_model, models } from "../model/model_loader";
 import { mat4, vec3 } from "gl-matrix";
 import { Scene } from "../scene/scene";
-import { PipeLine } from "../pipelines/pipeline_manager";
+import { PipeLine } from "../pipelines/pipeline";
 
 type SceneObjectConstructionParams = {
   id: string;
   name: string;
   model?: string;
   shader_path?: string;
-  pipeline: typeof PipeLine;
+  pipeline?: typeof PipeLine;
   position?: vec3;
   velocity?: vec3;
   rotation?: vec3;
@@ -28,7 +28,8 @@ class SceneObject {
   rotation: vec3;
   scale: vec3;
   shader_path: string;
-  pipeline: typeof PipeLine;
+  pipeline: typeof PipeLine | undefined;
+  pipeline_key: string;
   texture_diffuse: string | undefined;
   texture_specular: string | undefined;
   texture_normal: string | undefined;
@@ -61,23 +62,10 @@ class SceneObject {
     this.texture_normal = texture_normal;
     this.texture_emissive = texture_emissive;
     this.shader_path = shader_path;
+
     this.pipeline = pipeline;
-
-    // Init pipeline for faster retrieval
-    // See if there is some better place to init the pipeline
-    this.get_pipeline();
+    this.pipeline_key = pipeline?.get_pipeline_key(shader_path) || "";
   }
-
-  get_pipeline = async () => {
-    return PipeLine.get_pipeline(this.pipeline, this.shader_path ?? "");
-  };
-
-  get_pipeline_key = () => {
-    return PipeLine.get_pipeline_key(
-      this.shader_path ?? "",
-      this.pipeline.pipeline_label ?? ""
-    );
-  };
 
   get_model_matrix = () => {
     // Note these operations appear in reverse order because they are right multiplied

@@ -1,5 +1,5 @@
 import { vec4 } from "gl-matrix";
-import { create_gpu_buffer } from "../gpu_util";
+import { create_gpu_buffer } from "../util/gpu_util";
 
 const models: { [key: string]: ModelData } = {};
 
