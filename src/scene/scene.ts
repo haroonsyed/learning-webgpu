@@ -1,5 +1,9 @@
+import { vec3 } from "gl-matrix";
 import { Camera } from "../camera/camera";
+import { ComputeObject } from "../compute/compute_object";
 import { Light } from "../lights/light";
+import { Default2DComputePipeLine } from "../pipelines/default_2d_compute_pipeline";
+import { Default3DPipeLine } from "../pipelines/default_3d_pipeline";
 import { PipeLine } from "../pipelines/pipeline";
 import { PipeLineManager } from "../pipelines/pipeline_manager";
 import { ShaderManager } from "../pipelines/shader_manager";
@@ -11,6 +15,7 @@ import { TextureManager } from "../texture/texture_manager";
 
 class Scene {
   active: boolean = true;
+  current_frame: number = 0;
 
   event_system: GameEventSystem = new GameEventSystem();
   texture_manager: TextureManager = new TextureManager();
@@ -32,16 +37,23 @@ class Scene {
   // In other words, resource managers should not be static, rather classes that are instantiated per scene.
   constructor(scene_path: string = "", canvas_id: string = "canvas") {
     // Init Canvas
-    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    this.resize_scene();
 
-    if (!canvas) {
+    if (!this.canvas) {
       alert("Canvas not found");
       throw new Error("Canvas not found");
     }
 
-    canvas.getContext("webgpu")?.configure({
+    const context = this.canvas.getContext(
+      "webgpu"
+    ) as unknown as GPUCanvasContext;
+    if (!context) {
+      alert("WebGPU not supported");
+      throw new Error("WebGPU not supported");
+    }
+
+    context.configure({
       device: SystemCore.device,
       format: this.presentation_format,
       usage:
@@ -50,16 +62,69 @@ class Scene {
 
     // Init scene from file...
 
+    // TEST COMPUTE SCENE
+    // const compute_obj = new ComputeObject({
+    //   id: "0",
+    //   name: "compute",
+    //   workgroup_size: [this.canvas?.width ?? 1, this.canvas?.height ?? 1, 1],
+    //   pipeline: Default2DComputePipeLine,
+    //   shader_path: "compute_shaders/compute_test.wgsl",
+    // });
+    // this.add_object(compute_obj);
+
+    // TEST 3D SCENE
+    // const num_objects = 1000;
+    // const radius = 60;
+    // for (let i = 0; i < num_objects; i++) {
+    //   const angle = (i / num_objects) * 10 * Math.PI; // Calculate the angle for each object
+    //   const x = (i / num_objects) * radius * Math.cos(angle); // Calculate the x coordinate
+    //   const z = (i / num_objects) * radius * Math.sin(angle); // Calculate the z coordinate
+
+    //   this.add_object(
+    //     new SceneObject({
+    //       id: i.toString(),
+    //       name: "cube",
+    //       model: "models/cube.obj",
+    //       shader_path: "shaders/default_3d.wgsl",
+    //       pipeline: Default3DPipeLine,
+    //       texture_diffuse: "textures/dirt/dirt.jpg",
+    //       position: vec3.fromValues(x, 0, z),
+    //       rotation: vec3.fromValues(i * 0.238, i * 0.3, i * 0.66),
+    //       scale: vec3.fromValues(0.1, 0.1, 0.1),
+    //     })
+    //   );
+    // }
+    // this.add_light(new Light("0", "light", [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]));
+    // this.camera.position = vec3.fromValues(2.0, 200.0, 4.0);
+    // this.camera.look_at(vec3.fromValues(0.0, 0.0, 0.0));
+
     // Register listeners
+    window.addEventListener("resize", this.resize_scene);
     this.event_system.subscribe(EventEnum.SCENE_FRAME_START, this.update);
     this.event_system.subscribe(EventEnum.SCENE_UPDATE_END, this.render);
-    this.event_system.subscribe(EventEnum.SCENE_RENDER_END, this.advance_frame);
-    this.event_system.subscribe(EventEnum.SCENE_FRAME_END, this.frame_end);
+    this.event_system.subscribe(EventEnum.SCENE_RENDER_END, this.frame_end);
   }
 
-  async advance_frame() {
-    await this.frame_start();
-  }
+  resize_scene = () => {
+    const rect = this.canvas?.getBoundingClientRect();
+    if (this.canvas && rect) {
+      this.canvas.width = rect.width;
+      this.canvas.height = rect.height;
+
+      this.depth_texture_view = SystemCore.device
+        .createTexture({
+          label: "Depth Texture",
+          size: {
+            width: this.canvas!.width,
+            height: this.canvas!.height,
+            depthOrArrayLayers: 1,
+          },
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        })
+        .createView();
+    }
+  };
 
   add_light = (light: Light) => {
     this.lights.push(light);
@@ -68,63 +133,59 @@ class Scene {
   add_object = (object: SceneObject) => {
     this.objects.push(object);
 
-    // this.pipeline_manager.register_pipeline(???);
+    if (object.pipeline) {
+      this.pipeline_manager.register_pipeline(
+        object.pipeline,
+        object.shader_path,
+        this
+      );
+    }
   };
 
   frame_start = async () => {
-    const context = this.canvas?.getContext("webgpu");
+    if (!this.active) {
+      return;
+    }
+
+    const context = this.canvas?.getContext(
+      "webgpu"
+    ) as unknown as GPUCanvasContext;
     if (!context) {
       return;
     }
 
     // Initialize render textures for this frame
-    this.texture_view = context?.getCurrentTexture().createView();
-    this.depth_texture_view = SystemCore.device
-      .createTexture({
-        label: "Depth Texture",
-        size: {
-          width: this.canvas!.width,
-          height: this.canvas!.height,
-          depthOrArrayLayers: 1,
-        },
-        format: "depth24plus",
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-      })
-      .createView();
+    this.texture_view = context.getCurrentTexture().createView();
 
-    this.event_system.publish(EventEnum.SCENE_FRAME_START);
+    await this.event_system.publish(EventEnum.SCENE_FRAME_START);
   };
 
   frame_end = async () => {
-    // Cleanup
-    this.texture_view = undefined;
-    this.depth_texture_view = undefined;
+    this.current_frame++;
 
-    this.event_system.publish(EventEnum.SCENE_FRAME_END);
+    await this.event_system.publish(EventEnum.SCENE_FRAME_END);
   };
 
   update = async () => {
     if (SystemCore.system_input.key_press.get("q") || !this.active) {
       this.active = false;
+      console.log("Ending scene...");
       // TODO: Should probably publish something about scene end
       return;
     }
 
-    this.event_system.publish(EventEnum.SCENE_UPDATE_START);
-    console.log(
-      "Calculating Physics, Queuing rendering commands for this frame..."
-    );
+    await this.event_system.publish(EventEnum.SCENE_UPDATE_START);
 
     const update_promises = [...this.objects, ...this.lights, this.camera].map(
       (object) => object.update(this)
     );
     await Promise.all(update_promises);
 
-    this.event_system.publish(EventEnum.SCENE_UPDATE_END);
+    await this.event_system.publish(EventEnum.SCENE_UPDATE_END);
   };
 
   render = async () => {
-    this.event_system.publish(EventEnum.SCENE_RENDER_START);
+    await this.event_system.publish(EventEnum.SCENE_RENDER_START);
 
     const unique_pipelines = Array.from(
       this.pipeline_manager.registered_pipelines.values()
@@ -148,7 +209,7 @@ class Scene {
       await Promise.all(render_promises);
     }
 
-    this.event_system.publish(EventEnum.SCENE_RENDER_END);
+    await this.event_system.publish(EventEnum.SCENE_RENDER_END);
   };
 }
 

@@ -5,7 +5,7 @@ import { SystemInputHandler } from "./system_input";
 // I only intend on having one system, so this class will be static.
 // Simplifies access, and may have performance benefits.
 class SystemCore {
-  static scene: Scene;
+  static scenes: Scene[] = [];
   static config: SystemConfig;
 
   static adapter: GPUAdapter;
@@ -20,20 +20,10 @@ class SystemCore {
 
     // Setup core systems
     SystemCore.config = new SystemConfig(); // Load from file later
-    SystemCore.scene = new Scene(SystemCore.config.start_scene);
+    SystemCore.system_input = new SystemInputHandler();
 
-    // TEMP SCENE INIT
-    // const compute_obj = new ComputeObject({
-    //   id: "0",
-    //   name: "compute",
-    //   workgroup_size: [SystemCore.canvas.width, SystemCore.canvas.height, 1],
-    //   pipeline: Default2DComputePipeLine,
-    //   shader_path: "compute_shaders/compute.wgsl",
-    // });
-    // SystemCore.scene.add_object(compute_obj);
-
-    // SystemCore.system_input = new SystemInputHandler();
-    // SystemCore.current_frame = 0;
+    // For now we have one scene
+    SystemCore.scenes.push(new Scene(SystemCore.config.start_scene));
 
     // Kick off event loop
     console.log("SystemCore initialized, starting event loop...");
@@ -56,9 +46,13 @@ class SystemCore {
 
   static async event_loop() {
     SystemCore.command_encoder = SystemCore.device.createCommandEncoder(); // Reset command encoder
-    this.system_input.reset();
+
+    // Update scenes
+    await Promise.all(this.scenes.map((scene) => scene.frame_start()));
+
     SystemCore.device.queue.submit([SystemCore.command_encoder.finish()]); // Submit render commands to GPU
     requestAnimationFrame(() => SystemCore.event_loop());
+    this.system_input.reset();
   }
 }
 

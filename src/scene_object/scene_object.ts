@@ -28,7 +28,8 @@ class SceneObject {
   rotation: vec3;
   scale: vec3;
   shader_path: string;
-  pipeline: PipeLine | undefined;
+  pipeline: typeof PipeLine | undefined;
+  pipeline_key: string;
   texture_diffuse: string | undefined;
   texture_specular: string | undefined;
   texture_normal: string | undefined;
@@ -62,9 +63,8 @@ class SceneObject {
     this.texture_emissive = texture_emissive;
     this.shader_path = shader_path;
 
-    // Init pipeline for faster retrieval
-    // See if there is some better place to init the pipeline
-    // this.get_pipeline();
+    this.pipeline = pipeline;
+    this.pipeline_key = pipeline?.get_pipeline_key(shader_path) || "";
   }
 
   get_model_matrix = () => {

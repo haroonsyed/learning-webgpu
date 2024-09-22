@@ -4,8 +4,12 @@ import { SystemCore } from "../system/system_core";
 import { PipeLine } from "./pipeline";
 
 class Default2DComputePipeLine extends PipeLine {
+  static get_pipeline_label(): string {
+    return "default_2d_compute";
+  }
+
   // Necessary to construct asynchonously
-  protected static async construct_pipeline(shader_path: string, scene: Scene) {
+  static async construct_pipeline(shader_path: string, scene: Scene) {
     const shader = await scene.shader_manager.get_shader(shader_path);
     const { device } = SystemCore;
 
@@ -25,13 +29,13 @@ class Default2DComputePipeLine extends PipeLine {
   }
 
   async render(scene: Scene): Promise<void> {
+    const pipeline_key = Default2DComputePipeLine.get_pipeline_key(
+      this.shader_path
+    );
+
     // Get relevant scene objects
     const relevant_compute_objects = scene.objects.filter(
-      (object) =>
-        PipeLine.get_pipeline_key(
-          object.shader_path ?? "",
-          object.pipeline?.pipeline_label ?? ""
-        ) === this.pipeline_key
+      (object) => object.pipeline_key === pipeline_key
     );
 
     if (relevant_compute_objects.length === 0 || !scene.texture_view) {
@@ -46,7 +50,7 @@ class Default2DComputePipeLine extends PipeLine {
       entries: [
         {
           binding: 0,
-          resource: scene.texture_view, // This needs to be recreated every frame
+          resource: scene.texture_view,
         },
       ],
     };
