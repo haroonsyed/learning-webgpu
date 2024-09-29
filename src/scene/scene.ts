@@ -1,9 +1,5 @@
-import { vec3 } from "gl-matrix";
 import { Camera } from "../camera/camera";
-import { ComputeObject } from "../compute/compute_object";
 import { Light } from "../lights/light";
-import { Default2DComputePipeLine } from "../pipelines/default_2d_compute_pipeline";
-import { Default3DPipeLine } from "../pipelines/default_3d_pipeline";
 import { PipeLine } from "../pipelines/pipeline";
 import { PipeLineManager } from "../pipelines/pipeline_manager";
 import { ShaderManager } from "../pipelines/shader_manager";
@@ -12,6 +8,16 @@ import { EventEnum } from "../system/event_enums";
 import { GameEventSystem } from "../system/event_system";
 import { SystemCore } from "../system/system_core";
 import { TextureManager } from "../texture/texture_manager";
+import { registered_types } from "./registered_types";
+import { registered_pipeline_types } from "../pipelines/registered_pipeline_types";
+
+type SceneData = {
+  objects: {
+    type: keyof typeof registered_types;
+    pipeline: keyof typeof registered_pipeline_types | undefined;
+    [key: string]: any;
+  }[];
+};
 
 class Scene {
   active: boolean = true;
@@ -29,7 +35,11 @@ class Scene {
   presentation_format: GPUTextureFormat = "rgba8unorm"; // Change this if you want HDR or something else. I am sticking with this as its most supported.
 
   lights: Light[] = [];
-  camera: Camera = new Camera("-1", "camera");
+  camera: Camera = new Camera({
+    id: "-1",
+    name: "camera",
+    scene: this,
+  });
   objects: SceneObject[] = [];
 
   // TODO: Load scene from file
@@ -61,49 +71,53 @@ class Scene {
     });
 
     // Init scene from file...
-
-    // TEST COMPUTE SCENE
-    // const compute_obj = new ComputeObject({
-    //   id: "0",
-    //   name: "compute",
-    //   workgroup_size: [this.canvas?.width ?? 1, this.canvas?.height ?? 1, 1],
-    //   pipeline: Default2DComputePipeLine,
-    //   shader_path: "compute_shaders/compute_test.wgsl",
-    // });
-    // this.add_object(compute_obj);
-
-    // TEST 3D SCENE
-    // const num_objects = 1000;
-    // const radius = 60;
-    // for (let i = 0; i < num_objects; i++) {
-    //   const angle = (i / num_objects) * 10 * Math.PI; // Calculate the angle for each object
-    //   const x = (i / num_objects) * radius * Math.cos(angle); // Calculate the x coordinate
-    //   const z = (i / num_objects) * radius * Math.sin(angle); // Calculate the z coordinate
-
-    //   this.add_object(
-    //     new SceneObject({
-    //       id: i.toString(),
-    //       name: "cube",
-    //       model: "models/cube.obj",
-    //       shader_path: "shaders/default_3d.wgsl",
-    //       pipeline: Default3DPipeLine,
-    //       texture_diffuse: "textures/dirt/dirt.jpg",
-    //       position: vec3.fromValues(x, 0, z),
-    //       rotation: vec3.fromValues(i * 0.238, i * 0.3, i * 0.66),
-    //       scale: vec3.fromValues(0.1, 0.1, 0.1),
-    //     })
-    //   );
-    // }
-    // this.add_light(new Light("0", "light", [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]));
-    // this.camera.position = vec3.fromValues(2.0, 200.0, 4.0);
-    // this.camera.look_at(vec3.fromValues(0.0, 0.0, 0.0));
-
-    // Register listeners
-    window.addEventListener("resize", this.resize_scene);
-    this.event_system.subscribe(EventEnum.SCENE_FRAME_START, this.update);
-    this.event_system.subscribe(EventEnum.SCENE_UPDATE_END, this.render);
-    this.event_system.subscribe(EventEnum.SCENE_RENDER_END, this.frame_end);
+    this.load_scene(scene_path, this).then(() => {
+      // Register listeners
+      window.addEventListener("resize", this.resize_scene);
+      this.event_system.subscribe(EventEnum.SCENE_FRAME_START, this.update);
+      this.event_system.subscribe(EventEnum.SCENE_UPDATE_END, this.render);
+      this.event_system.subscribe(EventEnum.SCENE_RENDER_END, this.frame_end);
+    });
   }
+
+  load_scene = async (scene_path: string, scene: Scene): Promise<void> => {
+    console.log(`Loading scene from: ${scene_path}`);
+    try {
+      const response = await fetch(scene_path);
+      const scene_data = (await response.json()) as SceneData;
+      const scene_objects_path = "objects";
+
+      // Construct the scene objects
+      scene_data[scene_objects_path].forEach((object_data) => {
+        const { type, pipeline, ...args } = object_data;
+        const object_type = registered_types[type];
+        if (object_type) {
+          // For now we treat lights, camera and object differently because of the way UBO is loaded.
+          // But in future it should be generic, and such distinction should be handled by the pipeline.
+          const object = new object_type({
+            ...(args as any),
+            scene: this,
+            pipeline: pipeline && registered_pipeline_types[pipeline],
+          });
+          console.log(object);
+
+          if (object instanceof Camera) {
+            scene.camera = object;
+          } else if (object instanceof Light) {
+            scene.add_light(object);
+          } else {
+            scene.add_object(object);
+          }
+        } else {
+          console.error(
+            `Unrecognized object type: ${type}, did you add it to the registered types file?`
+          );
+        }
+      });
+    } catch (error) {
+      console.error(`Error loading scene: ${error}`);
+    }
+  };
 
   resize_scene = () => {
     const rect = this.canvas?.getBoundingClientRect();

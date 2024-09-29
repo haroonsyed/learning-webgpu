@@ -6,6 +6,7 @@ import { PipeLine } from "../pipelines/pipeline";
 type SceneObjectConstructionParams = {
   id: string;
   name: string;
+  scene: Scene;
   model?: string;
   shader_path?: string;
   pipeline?: typeof PipeLine;
@@ -38,6 +39,7 @@ class SceneObject {
   constructor({
     id,
     name,
+    scene,
     model = "",
     shader_path = "",
     pipeline,

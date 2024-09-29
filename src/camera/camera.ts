@@ -1,5 +1,8 @@
 import { mat4, vec3 } from "gl-matrix";
-import { SceneObject } from "../scene_object/scene_object";
+import {
+  SceneObject,
+  SceneObjectConstructionParams,
+} from "../scene_object/scene_object";
 import { Scene } from "../scene/scene";
 import { SystemCore } from "../system/system_core";
 
@@ -9,6 +12,10 @@ enum CameraMovementMode {
   FIXED,
 }
 
+type CameraConstructionParams = {
+  look_at_target?: vec3;
+} & SceneObjectConstructionParams;
+
 class Camera extends SceneObject {
   up: vec3 = vec3.fromValues(0.0, 1.0, 0.0);
   look_at_target: vec3 = vec3.create();
@@ -17,18 +24,9 @@ class Camera extends SceneObject {
   movement_speed: number = 1e-2;
   mouse_sensitivity: number = 1e-3;
 
-  constructor(
-    id: string,
-    name: string,
-    position: vec3 = vec3.fromValues(2.0, 2.0, 4.0)
-  ) {
-    super({
-      id,
-      name,
-      model: "",
-      position,
-    });
-    this.look_at(vec3.fromValues(0.0, 0.0, 0.0));
+  constructor({ look_at_target, ...super_args }: CameraConstructionParams) {
+    super(super_args);
+    this.look_at(look_at_target || vec3.create());
   }
 
   look_at = (target: vec3) => {
