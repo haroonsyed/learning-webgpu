@@ -1,0 +1,27 @@
+{
+  "objects": [
+    {
+      "type": "Light",
+      "id": "0",
+      "name": "light",
+      "position": [2, 2, 0],
+      "color": [1.0, 1.0, 1.0]
+    },
+    {
+      "type": "SceneObject",
+      "id": "1",
+      "name": "cube",
+      "model": "models/cube.obj",
+      "shader_path": "shaders/default_3d.wgsl",
+      "pipeline": "Default3DPipeLine",
+      "texture_diffuse": "textures/dirt/dirt.jpg"
+    },
+    {
+      "type": "Camera",
+      "id": "2",
+      "name": "camera",
+      "position": [3, 2, 3],
+      "look_at": [0, 0, 0]
+    }
+  ]
+}
