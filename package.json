@@ -11,16 +11,15 @@
   "keywords": [],
   "author": "haroonsyed haroonaminsyed@gmail.com",
   "license": "ISC",
-  "devDependencies": {
+  "devDependencies": {},
+  "dependencies": {
     "@types/node": "^22.2.0",
     "@webgpu/types": "^0.1.44",
     "raw-loader": "^4.0.2",
     "ts-loader": "^9.5.1",
     "typescript": "^5.5.4",
     "webpack": "^5.93.0",
-    "webpack-cli": "^5.1.4"
-  },
-  "dependencies": {
+    "webpack-cli": "^5.1.4",
     "gl-matrix": "^3.4.3"
   }
 }
