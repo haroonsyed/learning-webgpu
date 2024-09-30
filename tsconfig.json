@@ -10,6 +10,7 @@
     "lib": ["es2017", "dom"],
     "types": ["node", "@webgpu/types"],
     "moduleResolution": "node",
+    "declaration": true,
   },
   "exclude": ["node_modules"]
 }
