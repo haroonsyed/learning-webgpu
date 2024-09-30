@@ -6,4 +6,3 @@ declare class Default2DComputePipeLine extends PipeLine {
     render(scene: Scene): Promise<void>;
 }
 export { Default2DComputePipeLine };
-//# sourceMappingURL=default_2d_compute_pipeline.d.ts.map

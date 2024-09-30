@@ -47,4 +47,3 @@ declare class SceneObject {
     remove_from_scene: (scene: Scene) => void;
 }
 export { SceneObject, SceneObjectConstructionParams };
-//# sourceMappingURL=scene_object.d.ts.map

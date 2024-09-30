@@ -8,4 +8,3 @@ type ModelData = {
 };
 declare const load_model: (model_path: string | undefined) => Promise<void>;
 export { load_model, models };
-//# sourceMappingURL=model_loader.d.ts.map

@@ -13,4 +13,3 @@ declare class Light extends SceneObject {
     };
 }
 export { Light };
-//# sourceMappingURL=light.d.ts.map

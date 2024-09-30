@@ -30,4 +30,3 @@ declare class Scene {
     render: () => Promise<void>;
 }
 export { Scene };
-//# sourceMappingURL=scene.d.ts.map

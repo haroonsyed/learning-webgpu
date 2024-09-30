@@ -10,4 +10,3 @@ declare abstract class PipeLine {
     abstract render(scene: Scene): Promise<void>;
 }
 export { PipeLine };
-//# sourceMappingURL=pipeline.d.ts.map
