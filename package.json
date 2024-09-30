@@ -1,5 +1,5 @@
 {
-  "name": "webgpu-engine",
+  "name": "syed-webgpu-engine",
   "version": "1.0.0",
   "description": "An event driven engine built with typescript, WASM and webgpu to create hardware-accelerated cross platform applications.",
   "main": "index.js",
