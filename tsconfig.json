@@ -2,14 +2,15 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "module": "ES2015",
-    "target": "es6",
+    "module": "commonjs",
+    "target": "es2016",
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
-    "lib": ["es2017", "dom"],
+    "lib": ["es2016", "dom"],
     "types": ["node", "@webgpu/types"],
     "moduleResolution": "node",
+    "declaration": true,
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }

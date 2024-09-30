@@ -1,5 +1,4 @@
 type SystemConfigType = {
-  start_scene: string;
+    start_scene: string;
 };
-
 export { SystemConfigType };

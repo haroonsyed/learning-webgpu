@@ -1,15 +1,16 @@
 {
-  "name": "learning-webgpu",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "syed-webgpu-engine",
+  "version": "1.0.8",
+  "description": "An event driven engine built with typescript, WASM and webgpu to create hardware-accelerated cross platform applications.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
+    "build": "tsc",
     "dev": "webpack --watch"
   },
   "keywords": [],
-  "author": "",
+  "author": "haroonsyed haroonaminsyed@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^22.2.0",
