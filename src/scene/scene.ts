@@ -8,12 +8,13 @@ import { EventEnum } from "../system/event_enums";
 import { GameEventSystem } from "../system/event_system";
 import { SystemCore } from "../system/system_core";
 import { TextureManager } from "../texture/texture_manager";
-import { registered_types } from "./registered_types";
+import { registered_scene_object_types } from "../scene_object/registered_scene_object_types";
 import { registered_pipeline_types } from "../pipelines/registered_pipeline_types";
 
 type SceneData = {
+  canvas: string | undefined;
   objects: {
-    type: keyof typeof registered_types;
+    type: keyof typeof registered_scene_object_types;
     pipeline: keyof typeof registered_pipeline_types | undefined;
     [key: string]: any;
   }[];
@@ -46,30 +47,6 @@ class Scene {
   // A scene will have resource managers that will load/cache resources (textures, pipelines, shaders, models etc). Unloading a scene will unload all resources cleanly.
   // In other words, resource managers should not be static, rather classes that are instantiated per scene.
   constructor(scene_path: string = "", canvas_id: string = "canvas") {
-    // Init Canvas
-    this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
-    this.resize_scene();
-
-    if (!this.canvas) {
-      alert("Canvas not found");
-      throw new Error("Canvas not found");
-    }
-
-    const context = this.canvas.getContext(
-      "webgpu"
-    ) as unknown as GPUCanvasContext;
-    if (!context) {
-      alert("WebGPU not supported");
-      throw new Error("WebGPU not supported");
-    }
-
-    context.configure({
-      device: SystemCore.device,
-      format: this.presentation_format,
-      usage:
-        GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING, // Added storage binding for direct output for compute shaders
-    });
-
     // Init scene from file...
     this.load_scene(scene_path, this).then(() => {
       // Register listeners
@@ -85,12 +62,37 @@ class Scene {
     try {
       const response = await fetch(scene_path);
       const scene_data = (await response.json()) as SceneData;
-      const scene_objects_path = "objects";
+
+      // Init Canvas
+      const canvas_id = scene_data.canvas || "canvas";
+      this.canvas = document.getElementById(canvas_id) as HTMLCanvasElement;
+      this.resize_scene();
+
+      if (!this.canvas) {
+        alert("Canvas not found");
+        throw new Error("Canvas not found");
+      }
+
+      const context = this.canvas.getContext(
+        "webgpu"
+      ) as unknown as GPUCanvasContext;
+      if (!context) {
+        alert("WebGPU not supported");
+        throw new Error("WebGPU not supported");
+      }
+
+      context.configure({
+        device: SystemCore.device,
+        format: this.presentation_format,
+        usage:
+          GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING, // Added storage binding for direct output for compute shaders
+      });
 
       // Construct the scene objects
+      const scene_objects_path = "objects";
       scene_data[scene_objects_path].forEach((object_data) => {
         const { type, pipeline, ...args } = object_data;
-        const object_type = registered_types[type];
+        const object_type = registered_scene_object_types[type];
         if (object_type) {
           // For now we treat lights, camera and object differently because of the way UBO is loaded.
           // But in future it should be generic, and such distinction should be handled by the pipeline.
@@ -99,7 +101,6 @@ class Scene {
             scene: this,
             pipeline: pipeline && registered_pipeline_types[pipeline],
           });
-          console.log(object);
 
           if (object instanceof Camera) {
             scene.camera = object;

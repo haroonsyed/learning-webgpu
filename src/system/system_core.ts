@@ -1,12 +1,12 @@
 import { Scene } from "../scene/scene";
-import { SystemConfig } from "./system_config";
+import { SystemConfigType } from "./system_config";
 import { SystemInputHandler } from "./system_input";
 
 // I only intend on having one system, so this class will be static.
 // Simplifies access, and may have performance benefits.
 class SystemCore {
   static scenes: Scene[] = [];
-  static config: SystemConfig;
+  static config: SystemConfigType;
 
   static adapter: GPUAdapter;
   static device: GPUDevice;
@@ -19,7 +19,8 @@ class SystemCore {
     await SystemCore.init_webgpu();
 
     // Setup core systems
-    SystemCore.config = new SystemConfig(); // Load from file later
+    const config_path = "./system_core_config.json";
+    SystemCore.config = await (await fetch(config_path)).json();
     SystemCore.system_input = new SystemInputHandler();
 
     // For now we have one scene
