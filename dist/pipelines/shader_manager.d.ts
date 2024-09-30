@@ -4,3 +4,4 @@ declare class ShaderManager {
     get_registered_shader: (shader_path: string) => string | undefined;
 }
 export { ShaderManager };
+//# sourceMappingURL=shader_manager.d.ts.map

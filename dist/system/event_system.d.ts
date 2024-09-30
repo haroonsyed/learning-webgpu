@@ -8,3 +8,4 @@ declare class GameEventSystem {
     publish(event_name: EventEnum, data?: any): Promise<void>;
 }
 export { GameEventSystem, EventCallBack };
+//# sourceMappingURL=event_system.d.ts.map

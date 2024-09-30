@@ -25,3 +25,4 @@ declare class Camera extends SceneObject {
     update: (scene: Scene) => Promise<void>;
 }
 export { Camera };
+//# sourceMappingURL=camera.d.ts.map

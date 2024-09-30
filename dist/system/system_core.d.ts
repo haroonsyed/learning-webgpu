@@ -13,3 +13,4 @@ declare class SystemCore {
     static event_loop(): Promise<void>;
 }
 export { SystemCore };
+//# sourceMappingURL=system_core.d.ts.map

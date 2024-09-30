@@ -18,3 +18,4 @@ declare class SystemInputHandler {
     reset(): void;
 }
 export { SystemInputHandler };
+//# sourceMappingURL=system_input.d.ts.map

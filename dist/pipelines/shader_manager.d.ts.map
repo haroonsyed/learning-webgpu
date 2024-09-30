@@ -1,0 +1,1 @@
+{"version":3,"file":"shader_manager.d.ts","sourceRoot":"","sources":["../../src/pipelines/shader_manager.ts"],"names":[],"mappings":"AAAA,cAAM,aAAa;IACjB,OAAO,sBAA6B;IAEpC,UAAU,gBAAuB,MAAM,qBAOrC;IAEF,qBAAqB,gBAAiB,MAAM,wBAE1C;CACH;AAED,OAAO,EAAE,aAAa,EAAE,CAAC"}

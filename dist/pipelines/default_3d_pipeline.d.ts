@@ -8,3 +8,4 @@ declare class Default3DPipeLine extends PipeLine {
     render(scene: Scene): Promise<void>;
 }
 export { Default3DPipeLine };
+//# sourceMappingURL=default_3d_pipeline.d.ts.map

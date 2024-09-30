@@ -6,3 +6,4 @@ export declare enum EventEnum {
     SCENE_RENDER_START = 4,
     SCENE_RENDER_END = 5
 }
+//# sourceMappingURL=event_enums.d.ts.map

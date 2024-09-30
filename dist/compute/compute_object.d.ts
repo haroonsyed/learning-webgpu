@@ -8,3 +8,4 @@ declare class ComputeObject extends SceneObject {
     parse_workgroup_size: (dimension: string | number, canvas_width: number, canvas_height: number) => number;
 }
 export { ComputeObject };
+//# sourceMappingURL=compute_object.d.ts.map
