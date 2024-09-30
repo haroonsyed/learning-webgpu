@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "module": "ES2015",
+    "module": "CommonJS",
     "target": "es6",
     "sourceMap": true,
     "strict": true,
