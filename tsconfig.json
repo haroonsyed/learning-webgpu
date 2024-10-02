@@ -11,6 +11,7 @@
     "types": ["node", "@webgpu/types"],
     "moduleResolution": "node",
     "declaration": true,
+    "emitDeclarationOnly": true,
   },
   "exclude": ["node_modules", "dist"]
 }
