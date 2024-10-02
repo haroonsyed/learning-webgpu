@@ -1,0 +1,13 @@
+{
+  "canvas": "canvas",
+  "objects": [
+    {
+      "type": "ComputeObject",
+      "id": "test_compute_scene",
+      "name": "compute",
+      "workgroup_size": ["canvas_width", "canvas_height", 1],
+      "pipeline": "Default2DComputePipeLine",
+      "shader_path": "compute_shaders/compute_test.wgsl"
+    }
+  ]
+}

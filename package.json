@@ -1,13 +1,13 @@
 {
   "name": "syed-webgpu-engine",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "An event driven engine built with typescript, WASM and webgpu to create hardware-accelerated cross platform applications.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "dev": "webpack --watch"
+    "dev": "vite",
+    "build": "vite build && tsc"
   },
   "keywords": [],
   "author": "haroonsyed haroonaminsyed@gmail.com",
@@ -15,11 +15,8 @@
   "devDependencies": {
     "@types/node": "^22.2.0",
     "@webgpu/types": "^0.1.44",
-    "raw-loader": "^4.0.2",
-    "ts-loader": "^9.5.1",
     "typescript": "^5.5.4",
-    "webpack": "^5.93.0",
-    "webpack-cli": "^5.1.4"
+    "vite": "^5.4.8"
   },
   "dependencies": {
     "gl-matrix": "^3.4.3"
