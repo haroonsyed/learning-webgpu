@@ -1,15 +1,13 @@
-import { EventEnum } from "./event_enums";
-
 type EventCallBack = (data: any) => Promise<void>;
 
 class GameEventSystem {
-  private events: Map<EventEnum, EventCallBack[]>;
+  private events: Map<string, EventCallBack[]>;
 
   constructor() {
-    this.events = new Map<EventEnum, EventCallBack[]>();
+    this.events = new Map<string, EventCallBack[]>();
   }
 
-  subscribe(event_name: EventEnum, callback: EventCallBack) {
+  subscribe(event_name: string, callback: EventCallBack) {
     if (!this.events.has(event_name)) {
       this.events.set(event_name, []);
     }
@@ -22,7 +20,7 @@ class GameEventSystem {
     return callback;
   }
 
-  unsubscribe(event_name: EventEnum, callback: EventCallBack) {
+  unsubscribe(event_name: string, callback: EventCallBack) {
     const event_callbacks = this.events.get(event_name)!;
     const index = event_callbacks?.indexOf(callback) ?? -1;
 
@@ -31,7 +29,7 @@ class GameEventSystem {
     }
   }
 
-  async publish(event_name: EventEnum, data: any = {}) {
+  async publish(event_name: string, data: any = {}) {
     if (!this.events.has(event_name)) {
       return;
     }

@@ -4,7 +4,7 @@ import { PipeLine } from "../pipelines/pipeline";
 import { PipeLineManager } from "../pipelines/pipeline_manager";
 import { ShaderManager } from "../pipelines/shader_manager";
 import { SceneObject } from "../scene_object/scene_object";
-import { EventEnum } from "../system/event_enums";
+import { SceneEventEnums } from "./scene_event_enums";
 import { GameEventSystem } from "../system/event_system";
 import { SystemCore } from "../system/system_core";
 import { TextureManager } from "../texture/texture_manager";
@@ -51,9 +51,18 @@ class Scene {
     this.load_scene(scene_path, this).then(() => {
       // Register listeners
       window.addEventListener("resize", this.resize_scene);
-      this.event_system.subscribe(EventEnum.SCENE_FRAME_START, this.update);
-      this.event_system.subscribe(EventEnum.SCENE_UPDATE_END, this.render);
-      this.event_system.subscribe(EventEnum.SCENE_RENDER_END, this.frame_end);
+      this.event_system.subscribe(
+        SceneEventEnums.SCENE_FRAME_START,
+        this.update
+      );
+      this.event_system.subscribe(
+        SceneEventEnums.SCENE_UPDATE_END,
+        this.render
+      );
+      this.event_system.subscribe(
+        SceneEventEnums.SCENE_RENDER_END,
+        this.frame_end
+      );
     });
   }
 
@@ -172,13 +181,13 @@ class Scene {
     // Initialize render textures for this frame
     this.texture_view = context.getCurrentTexture().createView();
 
-    await this.event_system.publish(EventEnum.SCENE_FRAME_START);
+    await this.event_system.publish(SceneEventEnums.SCENE_FRAME_START);
   };
 
   frame_end = async () => {
     this.current_frame++;
 
-    await this.event_system.publish(EventEnum.SCENE_FRAME_END);
+    await this.event_system.publish(SceneEventEnums.SCENE_FRAME_END);
   };
 
   update = async () => {
@@ -189,18 +198,18 @@ class Scene {
       return;
     }
 
-    await this.event_system.publish(EventEnum.SCENE_UPDATE_START);
+    await this.event_system.publish(SceneEventEnums.SCENE_UPDATE_START);
 
     const update_promises = [...this.objects, ...this.lights, this.camera].map(
       (object) => object.update(this)
     );
     await Promise.all(update_promises);
 
-    await this.event_system.publish(EventEnum.SCENE_UPDATE_END);
+    await this.event_system.publish(SceneEventEnums.SCENE_UPDATE_END);
   };
 
   render = async () => {
-    await this.event_system.publish(EventEnum.SCENE_RENDER_START);
+    await this.event_system.publish(SceneEventEnums.SCENE_RENDER_START);
 
     const unique_pipelines = Array.from(
       this.pipeline_manager.registered_pipelines.values()
@@ -224,7 +233,7 @@ class Scene {
       await Promise.all(render_promises);
     }
 
-    await this.event_system.publish(EventEnum.SCENE_RENDER_END);
+    await this.event_system.publish(SceneEventEnums.SCENE_RENDER_END);
   };
 }
 
